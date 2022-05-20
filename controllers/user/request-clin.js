@@ -52,9 +52,12 @@ function getRequestsAdmin (req, res){
 								var lng = '';
 								var status = '';
 								var needShelter = '';
+								var referralCenter = '';
+								var needAssistance = '';
+								var clinicalAdvice = '';
 								var notes = '';
 								var needsOther = '';
-								var othergroup = '';
+								var group = '';
 								var drugs = [];
 								var idencrypt = '';
 								var idUserDecrypt = user._id.toString();
@@ -67,8 +70,11 @@ function getRequestsAdmin (req, res){
 										lat = temppatients[j].lat
 										lng = temppatients[j].lng
 										status = temppatients[j].status
-										othergroup = temppatients[j].othergroup
+										group = temppatients[j].group
 										needShelter = temppatients[j].needShelter
+										referralCenter = temppatients[j].referralCenter
+										needAssistance = temppatients[j].needAssistance
+										clinicalAdvice = temppatients[j].clinicalAdvice
 										notes = temppatients[j].notes
 										needsOther = temppatients[j].needsOther
 										drugs = temppatients[j].drugs
@@ -78,7 +84,7 @@ function getRequestsAdmin (req, res){
 									}
 								}
 								var userName = user.userName+' '+user.lastName;
-								listPatients.push({userId: userId, userName: userName, email: user.email, lang: user.lang,phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, lat: lat, lng: lng, status: status, othergroup: othergroup, needShelter: needShelter, notes: notes, needsOther: needsOther, drugs: drugs, subgroup: user.subgroup});
+								listPatients.push({userId: userId, userName: userName, email: user.email, lang: user.lang,phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, lat: lat, lng: lng, status: status, group: group, needShelter: needShelter, notes: notes, needsOther: needsOther, drugs: drugs, subgroup: user.subgroup, referralCenter: referralCenter, needAssistance: needAssistance, clinicalAdvice: clinicalAdvice});
 								patientsAddded++;
 						}else{
 							listPatients.push({});
@@ -111,10 +117,12 @@ function saveRequest (req, res){
 	eventdb.lng = req.body.lng
 	eventdb.notes = req.body.notes
 	eventdb.needsOther = req.body.needsOther
+	eventdb.referralCenter = req.body.referralCenter
+	eventdb.needAssistance = req.body.needAssistance
+	eventdb.clinicalAdvice = req.body.clinicalAdvice
 	eventdb.status = req.body.status
 	eventdb.updateDate = req.body.updateDate
 	eventdb.group = req.body.group
-	eventdb.othergroup = req.body.othergroup
 	eventdb.drugs = req.body.drugs
 	eventdb.createdBy = userId
 
@@ -124,7 +132,8 @@ function saveRequest (req, res){
 			res.status(500).send({message: `Failed to save in the database: ${err} `})
 		}
 		if(eventdbStored){
-			notifyGroup(eventdb.group, 'New', userId);
+			//notifyGroup(eventdb.group, 'New', userId);
+			//notifySalesforce
 			res.status(200).send({message: 'Eventdb created'});
 		}
 	})
@@ -136,7 +145,8 @@ function updateRequest (req, res){
 	update.updateDate = Date.now();
 	RequestClin.findByIdAndUpdate(requestId, update, { new: true}, (err,eventdbUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-		notifyGroup(eventdbUpdated.group, 'Update', eventdbUpdated.createdBy);
+		//notifyGroup(eventdbUpdated.group, 'Update', eventdbUpdated.createdBy);
+		//notifySalesforce
 		res.status(200).send({message: 'Request updated'})
 
 	})
@@ -186,38 +196,16 @@ function deleteRequest (req, res){
 	})
 }
 
-function setChecks (req, res){
-
-	let requestId= req.params.requestId;
-
-	RequestClin.findByIdAndUpdate(requestId, { checks: req.body.checks }, {select: '-createdBy', new: true}, (err,patientUpdated) => {
-		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-
-			res.status(200).send({message: 'checks changed'})
-
-	})
-}
-
-function getChecks (req, res){
-
-	let requestId= req.params.requestId;
-
-	RequestClin.findById(requestId, {"_id" : false , "createdBy" : false }, (err,patient) => {
-		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-			res.status(200).send({checks: patient.checks})
-
-	})
-}
-
 function setStatus (req, res){
 	let requestId= crypt.decrypt(req.params.requestId);
-	serviceEmail.sendMailChangeStatus(req.body.email, req.body.userName, req.body.lang, req.body.group, req.body.statusInfo, req.body.groupEmail)
+	/*serviceEmail.sendMailChangeStatus(req.body.email, req.body.userName, req.body.lang, req.body.group, req.body.statusInfo, req.body.groupEmail)
 					.then(response => {
 						console.log('Email sent' )
 					})
 					.catch(response => {
 						console.log('Fail sending email' )
-					})
+					})*/
+    // notifySalesforce  
 
 	RequestClin.findByIdAndUpdate(requestId, { status: req.body.status }, {new: true}, (err,patientUpdated) => {
 		if(patientUpdated){
@@ -261,8 +249,6 @@ module.exports = {
 	saveRequest,
 	updateRequest,
 	deleteRequest,
-	setChecks,
-	getChecks,
 	setStatus,
 	changenotes,
 	getGroupRequest

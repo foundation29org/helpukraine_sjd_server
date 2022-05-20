@@ -7,11 +7,11 @@ const User = require('./user')
 
 const { conndbaccounts } = require('../db_connect')
 
-const checksSchema = Schema({
-	check1: {type: Boolean, default: false},
-	check2: {type: Boolean, default: false},
-	check3: {type: Boolean, default: false},
-	check4: {type: Boolean, default: false}
+const drugsSchema = Schema({
+	strength: String,
+	link: String,
+	dose: Number,
+	name: String,
 })
 
 const RequestClinSchema = Schema({
@@ -20,17 +20,13 @@ const RequestClinSchema = Schema({
 	notes: {type: String, default: ''},
 	needsOther: {type: String, default: ''},
 	status: {type: String, default: null},
-	checks: {type: checksSchema, default: {
-		check1: false,
-		check2: false,
-		check3: false,
-		check4: false
-	}},
 	updateDate: {type: Date, default: Date.now},
 	creationDate: {type: Date, default: Date.now},
+	referralCenter: {type: String, default: null},
+	needAssistance: {type: String, default: null},
+	clinicalAdvice: {type: String, default: null},
 	group: { type: String, default: null},
-	othergroup: {type: String, default: null},
-	drugs: {type: Object, default: []},
+	drugs: [drugsSchema],
 	createdBy: { type: Schema.Types.ObjectId, ref: "User"}
 })
 

@@ -23,25 +23,13 @@ function sendMsgSupport(req, res){
 			support.subject = req.body.subject
 			support.description = req.body.description
 			support.files = req.body.files
-			if(req.body.groupId){
-				support.groupId = req.body.groupId
-			}else{
-				support.groupId = null
-			}
 			
 			support.createdBy = userId
 
 			//guardamos los valores en BD y enviamos Email
 			support.save((err, supportStored) => {
 				if (err) return res.status(500).send({ message: 'Error saving the msg'})
-				if(req.body.groupId){
-					Group.findById(support.groupId, function (err, group) {
-						var emailTo = null;
-						if (group){
-							emailTo = group.email
-						}
-	
-					serviceEmail.sendMailSupport(user.email, user.lang, user.role, supportStored, emailTo)
+				serviceEmail.sendMailSupport(user.email, user.lang, user.role, supportStored, null)
 						.then(response => {
 							return res.status(200).send({ message: 'Email sent'})
 						})
@@ -50,19 +38,6 @@ function sendMsgSupport(req, res){
 							//res.status(200).send({ token: serviceAuth.createToken(user),  message: 'Fail sending email'})
 							res.status(500).send({ message: 'Fail sending email'})
 						})
-					//return res.status(200).send({ token: serviceAuth.createToken(user)})
-				})
-				}else{
-					serviceEmail.sendMailSupport(user.email, user.lang, user.role, supportStored, null)
-						.then(response => {
-							return res.status(200).send({ message: 'Email sent'})
-						})
-						.catch(response => {
-							//create user, but Failed sending email.
-							//res.status(200).send({ token: serviceAuth.createToken(user),  message: 'Fail sending email'})
-							res.status(500).send({ message: 'Fail sending email'})
-						})
-				}
 				
 			})
 		}else{
@@ -119,7 +94,6 @@ function getUserMsgs(req, res){
 
 function getAllMsgs(req, res){
 	let userId= crypt.decrypt(req.params.userId);
-	var groupId = req.body.groupId;
 	User.findById(userId, {"_id" : false , "password" : false, "__v" : false, "confirmationCode" : false, "loginAttempts" : false, "confirmed" : false, "lastLogin" : false}, (err, user) => {
 		if (err) return res.status(500).send({message: 'Error making the request:'})
 		if(!user) return res.status(404).send({code: 208, message: 'The user does not exist'})
@@ -150,32 +124,6 @@ function getAllMsgs(req, res){
 
 			})
 
-		}else if(user.role == 'Admin'){
-			Support.find({platform: 'Relief Ukraine', groupId: groupId},(err, msgs) => {
-				if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-				var listmsgs = [];
-				if(msgs.length>0){
-					msgs.forEach(function(u) {
-						//if(u.platform=='H29' || u.platform==undefined){
-							User.findById(u.createdBy, {"_id" : false , "password" : false, "__v" : false, "confirmationCode" : false, "loginAttempts" : false, "confirmed" : false, "lastLogin" : false}, (err, user2) => {
-								if(user2){
-									listmsgs.push({ subject:u.subject, description: u.description, date: u.date, status: u.status, statusDate: u.statusDate, type: u.type, _id: u._id, files: u.files, email: user2.email, lang: user2.lang, id: u._id});
-								}else{
-									listmsgs.push({ subject:u.subject, description: u.description, date: u.date, status: u.status, statusDate: u.statusDate, type: u.type, _id: u._id, files: u.files, email: '', lang: '', id: u._id});
-
-								}
-								if(listmsgs.length == msgs.length){
-									res.status(200).send({listmsgs})
-								}
-							});
-						//}
-					});
-				}
-				else{
-					res.status(200).send({listmsgs})
-				}
-
-			});
 		}else{
 			res.status(401).send({message: 'without permission'})
 		}

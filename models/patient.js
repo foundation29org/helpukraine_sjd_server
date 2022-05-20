@@ -14,6 +14,13 @@ const checksSchema = Schema({
 	check4: {type: Boolean, default: false}
 })
 
+const drugsSchema = Schema({
+	strength: String,
+	link: String,
+	dose: Number,
+	name: String,
+})
+
 const PatientSchema = Schema({
 	patientName: String,
 	surname: String,
@@ -40,9 +47,10 @@ const PatientSchema = Schema({
 	lastAccess: {type: Date, default: Date.now},
 	creationDate: {type: Date, default: Date.now},
 	previousDiagnosis: {type: String, default: null},
-	avatar: String,
+	referralCenter: {type: String, default: null},
+	needAssistance: {type: String, default: null},
+	clinicalAdvice: {type: String, default: null},
 	group: { type: String, default: null},
-	othergroup: {type: String, default: null},
 	consentgroup: {type: Boolean, default: false},
 	checks: {type: checksSchema, default: {
 		check1: false,
@@ -51,7 +59,7 @@ const PatientSchema = Schema({
 		check4: false
 	}},
 	needShelter: {type: Boolean, default: false},
-	drugs: {type: Object, default: []}
+	drugs: [drugsSchema]
 })
 
 module.exports = conndbaccounts.model('Patient',PatientSchema)

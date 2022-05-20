@@ -462,24 +462,14 @@ function savePatient(userId, req) {
 	patient.relationship = req.body.relationship
 	patient.previousDiagnosis = req.body.previousDiagnosis
 	patient.consentgroup = req.body.consentgroup
-	patient.avatar = req.body.avatar
 	patient.createdBy = userId
 
-	if (req.body.avatar == undefined) {
-		if (patient.gender != undefined) {
-			if (patient.gender == 'male') {
-				patient.avatar = 'boy-0'
-			} else if (patient.gender == 'female') {
-				patient.avatar = 'girl-0'
-			}
-		}
-	}
 	// when you save, returns an id in patientStored to access that patient
 	patient.save(async (err, patientStored) => {
 		if (err) console.log({ message: `Failed to save in the database: ${err} ` })
 		var id = patientStored._id.toString();
 		var idencrypt = crypt.encrypt(id);
-		var patientInfo = { sub: idencrypt, patientName: patient.patientName, surname: patient.surname, birthDate: patient.birthDate, gender: patient.gender, country: patient.country, previousDiagnosis: patient.previousDiagnosis, avatar: patient.avatar, consentgroup: patient.consentgroup };
+		var patientInfo = { sub: idencrypt, patientName: patient.patientName, surname: patient.surname, birthDate: patient.birthDate, gender: patient.gender, country: patient.country, previousDiagnosis: patient.previousDiagnosis, consentgroup: patient.consentgroup };
 		console.log('Patient created' + patientInfo);
 
 	})
@@ -866,6 +856,29 @@ function changeiscaregiver (req, res){
 	})
 }
 
+function setChecks (req, res){
+
+	let userId= crypt.decrypt(req.params.userId);
+
+	User.findByIdAndUpdate(userId, { checks: req.body.checks }, {select: '-createdBy', new: true}, (err,patientUpdated) => {
+		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
+
+			res.status(200).send({message: 'checks changed'})
+
+	})
+}
+
+function getChecks (req, res){
+
+	let userId= crypt.decrypt(req.params.userId);
+
+	User.findById(userId, {"_id" : false , "createdBy" : false }, (err,patient) => {
+		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
+			res.status(200).send({checks: patient.checks})
+
+	})
+}
+
 module.exports = {
 	activateUser,
 	recoverPass,
@@ -883,5 +896,7 @@ module.exports = {
 	getPatientEmail,
 	isVerified,
 	changeiscaregiver,
-	setPosition
+	setPosition,
+	setChecks,
+	getChecks
 }

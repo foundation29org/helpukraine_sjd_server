@@ -20,6 +20,13 @@ const ParentSchema = Schema({
 	profession: String
 })
 
+const checksSchema = Schema({
+	check1: {type: Boolean, default: false},
+	check2: {type: Boolean, default: false},
+	check3: {type: Boolean, default: false},
+	check4: {type: Boolean, default: false}
+})
+
 const UserSchema = Schema({
 	email: {
 		type: String,
@@ -55,7 +62,13 @@ const UserSchema = Schema({
 	phone: { type: String, default: '' },
 	iscaregiver: { type: Boolean, default: false },
 	lat: {type: String, default: ''},
-	lng: {type: String, default: ''}
+	lng: {type: String, default: ''},
+	checks: {type: checksSchema, default: {
+		check1: false,
+		check2: false,
+		check3: false,
+		check4: false
+	}}
 })
 
 

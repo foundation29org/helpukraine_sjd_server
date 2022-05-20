@@ -229,30 +229,15 @@ function getPatient (req, res){
 function updatePatient (req, res){
 	let patientId= crypt.decrypt(req.params.patientId);
 	let update = req.body
-  var avatar = '';
-  if(req.body.avatar==undefined){
-    if(req.body.gender!=undefined){
-      if(req.body.gender=='male'){
-				avatar='boy-0'
-			}else if(req.body.gender=='female'){
-				avatar='girl-0'
-			}
-    }
-  }else{
-    avatar = req.body.avatar;
-  }
   Patient.findByIdAndUpdate(patientId, update, {new: true}, async (err,patientUpdated) => {
-  //Patient.findByIdAndUpdate(patientId, { gender: req.body.gender, birthDate: req.body.birthDate, patientName: req.body.patientName, surname: req.body.surname, relationship: req.body.relationship, country: req.body.country, previousDiagnosis: req.body.previousDiagnosis, avatar: avatar, group: req.body.group, consentgroup: req.body.consentgroup }, {new: true}, async (err,patientUpdated) => {
+  //Patient.findByIdAndUpdate(patientId, { gender: req.body.gender, birthDate: req.body.birthDate, patientName: req.body.patientName, surname: req.body.surname, relationship: req.body.relationship, country: req.body.country, previousDiagnosis: req.body.previousDiagnosis, group: req.body.group, consentgroup: req.body.consentgroup }, {new: true}, async (err,patientUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
 		var id = patientUpdated._id.toString();
 		var idencrypt= crypt.encrypt(id);
-		var patientInfo = {sub:idencrypt, patientName: patientUpdated.patientName, surname: patientUpdated.surname, birthDate: patientUpdated.birthDate, gender: patientUpdated.gender, country: patientUpdated.country, previousDiagnosis: patientUpdated.previousDiagnosis, avatar: patientUpdated.avatar, group: patientUpdated.group, consentgroup: patientUpdated.consentgroup};
+		var patientInfo = {sub:idencrypt, patientName: patientUpdated.patientName, surname: patientUpdated.surname, birthDate: patientUpdated.birthDate, gender: patientUpdated.gender, country: patientUpdated.country, previousDiagnosis: patientUpdated.previousDiagnosis, group: patientUpdated.group, consentgroup: patientUpdated.consentgroup};
 		
-		if(req.body.group==patientUpdated.group){
-			notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
-		}else{
-			notifyGroup(patientUpdated.group, 'New', patientUpdated.createdBy);
-		}
+		//notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
+		//notifySalesforce
 		
 		res.status(200).send({message: 'Patient updated', patientInfo})
 
@@ -285,13 +270,14 @@ function getStatus (req, res){
 
 function setStatus (req, res){
 	let patientId= crypt.decrypt(req.params.patientId);
-	serviceEmail.sendMailChangeStatus(req.body.email, req.body.userName, req.body.lang, req.body.group, req.body.statusInfo, req.body.groupEmail)
+	/*serviceEmail.sendMailChangeStatus(req.body.email, req.body.userName, req.body.lang, req.body.group, req.body.statusInfo, req.body.groupEmail)
 					.then(response => {
 						console.log('Email sent' )
 					})
 					.catch(response => {
 						console.log('Fail sending email' )
-					})
+					})*/
+	// notifySalesforce  
 	Patient.findByIdAndUpdate(patientId, { status: req.body.status }, {new: true}, (err,patientUpdated) => {
 		if(patientUpdated){
 			return res.status(200).send({message: 'Updated'})
@@ -354,7 +340,8 @@ function saveDrugs (req, res){
 
 	Patient.findByIdAndUpdate(patientId, { drugs: req.body.drugs }, { new: true}, (err,patientUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-			notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
+			//notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
+			//notifySalesforce
 			res.status(200).send({message: 'drugs changed'})
 
 	})
