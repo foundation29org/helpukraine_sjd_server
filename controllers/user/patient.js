@@ -9,15 +9,16 @@ const crypt = require('../../services/crypt')
 const f29azureService = require("../../services/f29azure")
 const Group = require('../../models/group')
 const serviceEmail = require('../../services/email')
+const serviceSalesForce = require('../../services/salesForce')
 
 /**
- * @api {get} https://health29.org/api/patients-all/:userId Get patient list of a user
+ * @api {get} https://virtualhubukraine.azurewebsites.net/api/patients-all/:userId Get patient list of a user
  * @apiName getPatientsUser
  * @apiDescription This method read the patient list of a user. For each patient you have, you will get: patientId, name, and last name.
  * @apiGroup Patients
  * @apiVersion 1.0.0
  * @apiExample {js} Example usage:
- *   this.http.get('https://health29.org/api/patients-all/'+userId)
+ *   this.http.get('https://virtualhubukraine.azurewebsites.net/api/patients-all/'+userId)
  *    .subscribe( (res : any) => {
  *      console.log('patient list: '+ res.listpatients);
  *      if(res.listpatients.length>0){
@@ -103,13 +104,13 @@ function getPatientsUser (req, res){
 
 
 /**
- * @api {get} https://health29.org/api/patients/:patientId Get patient
+ * @api {get} https://virtualhubukraine.azurewebsites.net/api/patients/:patientId Get patient
  * @apiName getPatient
  * @apiDescription This method read data of a Patient
  * @apiGroup Patients
  * @apiVersion 1.0.0
  * @apiExample {js} Example usage:
- *   this.http.get('https://health29.org/api/patients/'+patientId)
+ *   this.http.get('https://virtualhubukraine.azurewebsites.net/api/patients/'+patientId)
  *    .subscribe( (res : any) => {
  *      console.log('patient info: '+ res.patient);
  *     }, (err) => {
@@ -175,14 +176,14 @@ function getPatient (req, res){
 }
 
 /**
- * @api {put} https://health29.org/api/patients/:patientId Update Patient
+ * @api {put} https://virtualhubukraine.azurewebsites.net/api/patients/:patientId Update Patient
  * @apiName updatePatient
  * @apiDescription This method allows to change the data of a patient.
  * @apiGroup Patients
  * @apiVersion 1.0.0
  * @apiExample {js} Example usage:
  *   var patient = {patientName: '', surname: '', street: '', postalCode: '', citybirth: '', provincebirth: '', countrybirth: null, city: '', province: '', country: null, phone1: '', phone2: '', birthDate: null, gender: null, siblings: [], parents: []};
- *   this.http.put('https://health29.org/api/patients/'+patientId, patient)
+ *   this.http.put('https://virtualhubukraine.azurewebsites.net/api/patients/'+patientId, patient)
  *    .subscribe( (res : any) => {
  *      console.log('patient info: '+ res.patientInfo);
  *     }, (err) => {
@@ -268,6 +269,37 @@ function getStatus (req, res){
 	})
 }
 
+/**
+ * @api {put} https://virtualhubukraine.azurewebsites.net/api/patient/status/:patientId Update Status
+ * @apiName updatePatientStatus
+ * @apiDescription This method allows to change the data of a patient.
+ * @apiGroup Patients
+ * @apiVersion 1.0.0
+ * @apiExample {js} Example usage:
+ *   var data = {status: 'ontheway'};
+ *   this.http.put('https://virtualhubukraine.azurewebsites.net/api/patient/status/'+patientId, data)
+ *    .subscribe( (res : any) => {
+ *      console.log('Message: '+ res.message);
+ *     }, (err) => {
+ *      ...
+ *     }
+ *
+ * @apiHeader {String} authorization Users unique access-key. For this, go to  [Get token](#api-Access_token-signIn)
+ * @apiHeaderExample {json} Header-Example:
+ *     {
+ *       "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciPgDIUzI1NiJ9.eyJzdWIiOiI1M2ZlYWQ3YjY1YjM0ZTQ0MGE4YzRhNmUyMzVhNDFjNjEyOThiMWZjYTZjMjXkZTUxMTA9OGVkN2NlODMxYWY3IiwiaWF0IjoxNTIwMzUzMDMwLCJlcHAiOjE1NTE4ODkwMzAsInJvbGUiOiJVc2VyIiwiZ3JvdDEiOiJEdWNoZW5uZSBQYXJlbnQgUHJfrmVjdCBOZXRoZXJsYW5kcyJ9.MloW8eeJ857FY7-vwxJaMDajFmmVStGDcnfHfGJx05k"
+ *     }
+ * @apiParam {String} patientId Patient unique ID. More info here:  [Get patientId](#api-Patients-getPatientsUser)
+ * @apiParam (body) {string="new","contacted","pending","ontheway","contactlost","helped"} status Status of the Patient.
+ * @apiSuccess {String} message If the patient has been updated  correctly, it returns the message 'Updated'.
+ * @apiSuccessExample Success-Response:
+ * HTTP/1.1 200 OK
+ * {
+ * "message": "Updated"
+ * }
+ *
+ */
+
 function setStatus (req, res){
 	let patientId= crypt.decrypt(req.params.patientId);
 	/*serviceEmail.sendMailChangeStatus(req.body.email, req.body.userName, req.body.lang, req.body.group, req.body.statusInfo, req.body.groupEmail)
@@ -342,6 +374,14 @@ function saveDrugs (req, res){
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
 			//notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
 			//notifySalesforce
+			serviceSalesForce.getToken()
+					.then(response => {
+						console.log(response)
+					})
+					.catch(response => {
+						console.log(response)
+					})
+
 			res.status(200).send({message: 'drugs changed'})
 
 	})

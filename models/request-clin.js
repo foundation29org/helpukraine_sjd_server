@@ -18,13 +18,11 @@ const RequestClinSchema = Schema({
 	lat: {type: String, default: ''},
 	lng: {type: String, default: ''},
 	notes: {type: String, default: ''},
-	needsOther: {type: String, default: ''},
 	status: {type: String, default: null},
 	updateDate: {type: Date, default: Date.now},
 	creationDate: {type: Date, default: Date.now},
 	referralCenter: {type: String, default: null},
 	needAssistance: {type: String, default: null},
-	clinicalAdvice: {type: String, default: null},
 	group: { type: String, default: null},
 	drugs: [drugsSchema],
 	createdBy: { type: Schema.Types.ObjectId, ref: "User"}

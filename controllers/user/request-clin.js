@@ -51,12 +51,9 @@ function getRequestsAdmin (req, res){
 								var lat = '';
 								var lng = '';
 								var status = '';
-								var needShelter = '';
 								var referralCenter = '';
 								var needAssistance = '';
-								var clinicalAdvice = '';
 								var notes = '';
-								var needsOther = '';
 								var group = '';
 								var drugs = [];
 								var idencrypt = '';
@@ -71,12 +68,9 @@ function getRequestsAdmin (req, res){
 										lng = temppatients[j].lng
 										status = temppatients[j].status
 										group = temppatients[j].group
-										needShelter = temppatients[j].needShelter
 										referralCenter = temppatients[j].referralCenter
 										needAssistance = temppatients[j].needAssistance
-										clinicalAdvice = temppatients[j].clinicalAdvice
 										notes = temppatients[j].notes
-										needsOther = temppatients[j].needsOther
 										drugs = temppatients[j].drugs
 										var idPatientrDecrypt = temppatients[j]._id.toString();
 										var idencrypt= crypt.encrypt(idPatientrDecrypt);
@@ -84,7 +78,7 @@ function getRequestsAdmin (req, res){
 									}
 								}
 								var userName = user.userName+' '+user.lastName;
-								listPatients.push({userId: userId, userName: userName, email: user.email, lang: user.lang,phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, lat: lat, lng: lng, status: status, group: group, needShelter: needShelter, notes: notes, needsOther: needsOther, drugs: drugs, subgroup: user.subgroup, referralCenter: referralCenter, needAssistance: needAssistance, clinicalAdvice: clinicalAdvice});
+								listPatients.push({userId: userId, userName: userName, email: user.email, lang: user.lang,phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, lat: lat, lng: lng, status: status, group: group, notes: notes, drugs: drugs, subgroup: user.subgroup, referralCenter: referralCenter, needAssistance: needAssistance});
 								patientsAddded++;
 						}else{
 							listPatients.push({});
@@ -116,10 +110,8 @@ function saveRequest (req, res){
 	eventdb.lat = req.body.lat
 	eventdb.lng = req.body.lng
 	eventdb.notes = req.body.notes
-	eventdb.needsOther = req.body.needsOther
 	eventdb.referralCenter = req.body.referralCenter
 	eventdb.needAssistance = req.body.needAssistance
-	eventdb.clinicalAdvice = req.body.clinicalAdvice
 	eventdb.status = req.body.status
 	eventdb.updateDate = req.body.updateDate
 	eventdb.group = req.body.group
@@ -195,6 +187,38 @@ function deleteRequest (req, res){
 
 	})
 }
+
+
+/**
+ * @api {put} https://virtualhubukraine.azurewebsites.net/api/requestclin/status/:requestId Update Status
+ * @apiName updateclinicianStatus
+ * @apiDescription This method allows to change the data of a clinician case.
+ * @apiGroup Clinicals
+ * @apiVersion 1.0.0
+ * @apiExample {js} Example usage:
+ *   var data = {status: 'ontheway'};
+ *   this.http.put('https://virtualhubukraine.azurewebsites.net/api/requestclin/status/'+requestId, data)
+ *    .subscribe( (res : any) => {
+ *      console.log('Message: '+ res.message);
+ *     }, (err) => {
+ *      ...
+ *     }
+ *
+ * @apiHeader {String} authorization Users unique access-key. For this, go to  [Get token](#api-Access_token-signIn)
+ * @apiHeaderExample {json} Header-Example:
+ *     {
+ *       "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciPgDIUzI1NiJ9.eyJzdWIiOiI1M2ZlYWQ3YjY1YjM0ZTQ0MGE4YzRhNmUyMzVhNDFjNjEyOThiMWZjYTZjMjXkZTUxMTA9OGVkN2NlODMxYWY3IiwiaWF0IjoxNTIwMzUzMDMwLCJlcHAiOjE1NTE4ODkwMzAsInJvbGUiOiJVc2VyIiwiZ3JvdDEiOiJEdWNoZW5uZSBQYXJlbnQgUHJfrmVjdCBOZXRoZXJsYW5kcyJ9.MloW8eeJ857FY7-vwxJaMDajFmmVStGDcnfHfGJx05k"
+ *     }
+ * @apiParam {String} requestId Case unique ID
+ * @apiParam (body) {string="new","contacted","pending","ontheway","contactlost","helped"} status Status of the case.
+ * @apiSuccess {String} message If the case has been updated  correctly, it returns the message 'Updated'.
+ * @apiSuccessExample Success-Response:
+ * HTTP/1.1 200 OK
+ * {
+ * "message": "Updated"
+ * }
+ *
+ */
 
 function setStatus (req, res){
 	let requestId= crypt.decrypt(req.params.requestId);

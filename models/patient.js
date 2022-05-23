@@ -41,7 +41,6 @@ const PatientSchema = Schema({
 	createdBy: { type: Schema.Types.ObjectId, ref: "User"},
 	death: Date,
 	notes: {type: String, default: ''},
-	needsOther: {type: String, default: ''},
 	sharing: {type: Object, default: []},
 	status: {type: String, default: null},
 	lastAccess: {type: Date, default: Date.now},
@@ -49,7 +48,6 @@ const PatientSchema = Schema({
 	previousDiagnosis: {type: String, default: null},
 	referralCenter: {type: String, default: null},
 	needAssistance: {type: String, default: null},
-	clinicalAdvice: {type: String, default: null},
 	group: { type: String, default: null},
 	consentgroup: {type: Boolean, default: false},
 	checks: {type: checksSchema, default: {
@@ -58,7 +56,6 @@ const PatientSchema = Schema({
 		check3: false,
 		check4: false
 	}},
-	needShelter: {type: Boolean, default: false},
 	drugs: [drugsSchema]
 })
 

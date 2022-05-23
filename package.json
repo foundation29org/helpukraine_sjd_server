@@ -42,7 +42,7 @@
     "description": "API docs",
     "apidoc": {
       "title": "API for Health29",
-      "url": "https://health29.org/api"
+      "url": "https://virtualhubukraine.azurewebsites.net/api"
     },
     "header": {
       "title": "Introduction",
