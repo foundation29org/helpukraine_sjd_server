@@ -8,6 +8,8 @@ const crypt = require('../../services/crypt')
 const User = require('../../models/user')
 const Group = require('../../models/group')
 const serviceEmail = require('../../services/email')
+const serviceSalesForce = require('../../services/salesForce')
+const config = require('../../config')
 
 function getRequests (req, res){
 	let userId= crypt.decrypt(req.params.userId);
@@ -50,6 +52,7 @@ function getRequestsAdmin (req, res){
 								var enc = false;
 								var lat = '';
 								var lng = '';
+								var country = '';
 								var status = '';
 								var referralCenter = '';
 								var needAssistance = '';
@@ -66,6 +69,7 @@ function getRequestsAdmin (req, res){
 										console.log(temppatients[j].lat);
 										lat = temppatients[j].lat
 										lng = temppatients[j].lng
+										country = temppatients[j].country
 										status = temppatients[j].status
 										group = temppatients[j].group
 										referralCenter = temppatients[j].referralCenter
@@ -78,7 +82,7 @@ function getRequestsAdmin (req, res){
 									}
 								}
 								var userName = user.userName+' '+user.lastName;
-								listPatients.push({userId: userId, userName: userName, email: user.email, lang: user.lang,phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, lat: lat, lng: lng, status: status, group: group, notes: notes, drugs: drugs, subgroup: user.subgroup, referralCenter: referralCenter, needAssistance: needAssistance});
+								listPatients.push({userId: userId, userName: userName, email: user.email, lang: user.lang,phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, lat: lat, lng: lng, country: country, status: status, group: group, notes: notes, drugs: drugs, subgroup: user.subgroup, referralCenter: referralCenter, needAssistance: needAssistance});
 								patientsAddded++;
 						}else{
 							listPatients.push({});
@@ -109,6 +113,7 @@ function saveRequest (req, res){
 	let eventdb = new RequestClin()
 	eventdb.lat = req.body.lat
 	eventdb.lng = req.body.lng
+	eventdb.country = req.body.country
 	eventdb.notes = req.body.notes
 	eventdb.referralCenter = req.body.referralCenter
 	eventdb.needAssistance = req.body.needAssistance
@@ -126,6 +131,44 @@ function saveRequest (req, res){
 		if(eventdbStored){
 			//notifyGroup(eventdb.group, 'New', userId);
 			//notifySalesforce
+			var id = eventdbStored._id.toString();
+			var idencrypt = crypt.encrypt(id);
+			User.findById(userId, (err, user) => {
+				if (err) return res.status(500).send({message: `Error deleting the case: ${err}`})
+				if(user){
+					serviceSalesForce.getToken()
+						.then(response => {
+							console.log(response.instance_url)
+							var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+							var data  = serviceSalesForce.setCaseData(url, user, eventdbStored, "Profesional-Organizacion");
+
+							console.log(JSON.stringify(data));
+
+							serviceSalesForce.composite(response.access_token, response.instance_url, data)
+							.then(response2 => {
+								console.log(response2)
+								var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
+								RequestClin.findByIdAndUpdate(eventdbStored._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+									if (err){
+										console.log(`Error updating the patient: ${err}`);
+									}
+									if(eventdbStored){
+										console.log('Event updated sales ID');
+									}
+								})
+							})
+							.catch(response2 => {
+								console.log(response2)
+							})
+						})
+						.catch(response => {
+							console.log(response)
+						})
+				}else{
+					console.log('cant noti notifySalesforce');
+				}
+			})
+
 			res.status(200).send({message: 'Eventdb created'});
 		}
 	})
@@ -139,6 +182,44 @@ function updateRequest (req, res){
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
 		//notifyGroup(eventdbUpdated.group, 'Update', eventdbUpdated.createdBy);
 		//notifySalesforce
+
+			var id = eventdbUpdated._id.toString();
+			var idencrypt = crypt.encrypt(id);
+			User.findById(eventdbUpdated.createdBy, (err, user) => {
+				if (err) return res.status(500).send({message: `Error deleting the case: ${err}`})
+				if(user){
+					serviceSalesForce.getToken()
+						.then(response => {
+							console.log(response.instance_url)
+							var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+							var data  = serviceSalesForce.setCaseData(url, user, eventdbUpdated, "Profesional-Organizacion");
+														
+							console.log(JSON.stringify(data));
+
+							serviceSalesForce.composite(response.access_token, response.instance_url, data)
+							.then(response2 => {
+								console.log(response2)
+								var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
+								RequestClin.findByIdAndUpdate(eventdbUpdated._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+									if (err){
+										console.log(`Error updating the patient: ${err}`);
+									}
+									if(eventdbStored){
+										console.log('Event updated sales ID');
+									}
+								})
+							})
+							.catch(response2 => {
+								console.log(response2)
+							})
+						})
+						.catch(response => {
+							console.log(response)
+						})
+				}else{
+					console.log('cant noti notifySalesforce');
+				}
+			})
 		res.status(200).send({message: 'Request updated'})
 
 	})
@@ -177,6 +258,24 @@ function deleteRequest (req, res){
 	RequestClin.findById(requestId, (err, eventdb) => {
 		if (err) return res.status(500).send({message: `Error deleting the request: ${err}`})
 		if (eventdb){
+			//notifySalesforce
+			var salesforceId = eventdb.salesforceId;
+			console.log(salesforceId);
+			serviceSalesForce.getToken()
+			.then(response => {
+				console.log(response.instance_url)
+				 serviceSalesForce.deleteSF(response.access_token, response.instance_url, 'Case', salesforceId)
+				.then(response2 => {
+					console.log(response2)
+				})
+				.catch(response2 => {
+					console.log(response2)
+				})
+			})
+			.catch(response => {
+				console.log(response)
+			})
+
 			eventdb.remove(err => {
 				if(err) return res.status(500).send({message: `Error deleting the request: ${err}`})
 				res.status(200).send({message: `The request has been deleted`})
@@ -229,7 +328,6 @@ function setStatus (req, res){
 					.catch(response => {
 						console.log('Fail sending email' )
 					})*/
-    // notifySalesforce  
 
 	RequestClin.findByIdAndUpdate(requestId, { status: req.body.status }, {new: true}, (err,patientUpdated) => {
 		if(patientUpdated){

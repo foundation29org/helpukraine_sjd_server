@@ -10,6 +10,7 @@ const f29azureService = require("../../services/f29azure")
 const Group = require('../../models/group')
 const serviceEmail = require('../../services/email')
 const serviceSalesForce = require('../../services/salesForce')
+const config = require('../../config')
 
 /**
  * @api {get} https://virtualhubukraine.azurewebsites.net/api/patients-all/:userId Get patient list of a user
@@ -239,6 +240,41 @@ function updatePatient (req, res){
 		
 		//notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
 		//notifySalesforce
+			User.findById(patientUpdated.createdBy, (err, user) => {
+				if (err) return res.status(500).send({message: `Error deleting the case: ${err}`})
+				if(user){
+					serviceSalesForce.getToken()
+						.then(response => {
+							console.log(response.instance_url)
+							var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+							var data  = serviceSalesForce.setCaseData(url, user, patientUpdated, "Paciente");
+
+							console.log(JSON.stringify(data));
+
+							serviceSalesForce.composite(response.access_token, response.instance_url, data)
+							.then(response2 => {
+								console.log(response2)
+								var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
+								Patient.findByIdAndUpdate(patientUpdated._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+									if (err){
+										console.log(`Error updating the patient: ${err}`);
+									}
+									if(eventdbStored){
+										console.log('Event updated sales ID');
+									}
+								})
+							})
+							.catch(response2 => {
+								console.log(response2)
+							})
+						})
+						.catch(response => {
+							console.log(response)
+						})
+				}else{
+					console.log('cant noti notifySalesforce');
+				}
+			})
 		
 		res.status(200).send({message: 'Patient updated', patientInfo})
 
@@ -309,7 +345,6 @@ function setStatus (req, res){
 					.catch(response => {
 						console.log('Fail sending email' )
 					})*/
-	// notifySalesforce  
 	Patient.findByIdAndUpdate(patientId, { status: req.body.status }, {new: true}, (err,patientUpdated) => {
 		if(patientUpdated){
 			return res.status(200).send({message: 'Updated'})

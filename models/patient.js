@@ -19,6 +19,7 @@ const drugsSchema = Schema({
 	link: String,
 	dose: Number,
 	name: String,
+	salesforceId: String,
 })
 
 const PatientSchema = Schema({
@@ -50,6 +51,7 @@ const PatientSchema = Schema({
 	needAssistance: {type: String, default: null},
 	group: { type: String, default: null},
 	consentgroup: {type: Boolean, default: false},
+	salesforceId: {type: String, default: null},
 	checks: {type: checksSchema, default: {
 		check1: false,
 		check2: false,

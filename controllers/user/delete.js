@@ -6,6 +6,8 @@
 const User = require('../../models/user')
 const Patient = require('../../models/patient')
 const crypt = require('../../services/crypt')
+const serviceSalesForce = require('../../services/salesForce')
+const config = require('../../config')
 
 function deleteAccount (req, res){
 	console.log(req.body);
@@ -21,7 +23,7 @@ function deleteAccount (req, res){
 		
 				patients.forEach(function(u) {
 					var patientId = u._id.toString();
-					deletePatient(res, patientId, userId);
+					deletePatient(res, patientId, userId, user);
 				});
 				//deleteUser(res, userId);
 			})
@@ -32,17 +34,35 @@ function deleteAccount (req, res){
 }
 
 
-function deletePatient (res, patientId, userId){
+function deletePatient (res, patientId, userId, user){
 	Patient.findById(patientId, (err, patient) => {
 		if (err) return res.status(500).send({message: `Error deleting the case: ${err}`})
 		if(patient){
+
+			//notifySalesforce
+			var salesforceId = patient.salesforceId;
+			serviceSalesForce.getToken()
+			.then(response => {
+				console.log(response.instance_url)
+				 serviceSalesForce.deleteSF(response.access_token, response.instance_url, 'Case', salesforceId)
+				.then(response2 => {
+					console.log(response2)
+				})
+				.catch(response2 => {
+					console.log(response2)
+				})
+			})
+			.catch(response => {
+				console.log(response)
+			})
+
 			patient.remove(err => {
 				if(err) return res.status(500).send({message: `Error deleting the case: ${err}`})
-				savePatient(userId);
+				savePatient(userId, user);
 				res.status(200).send({message: `The case has been eliminated`})
 			})
 		}else{
-				savePatient(userId);
+				savePatient(userId, user);
 				return res.status(202).send({message: 'The case has been eliminated'})
 		}
 	})
@@ -54,17 +74,17 @@ function deleteUser (res, userId){
 		if(user){
 			user.remove(err => {
 				if(err) return res.status(500).send({message: `Error deleting the case: ${err}`})
-				savePatient(userId);
+				savePatient(userId, user);
 				res.status(200).send({message: `The case has been eliminated`})
 			})
 		}else{
-			savePatient(userId);
+			savePatient(userId, user);
 			 return res.status(202).send({message: 'The case has been eliminated'})
 		}
 	})
 }
 
-function savePatient(userId) {
+function savePatient(userId, user) {
 	let patient = new Patient()
 	patient.createdBy = userId
 	// when you save, returns an id in patientStored to access that patient
@@ -74,6 +94,34 @@ function savePatient(userId) {
 		var idencrypt = crypt.encrypt(id);
 		var patientInfo = { sub: idencrypt, patientName: patient.patientName, surname: patient.surname, birthDate: patient.birthDate, gender: patient.gender, country: patient.country, previousDiagnosis: patient.previousDiagnosis, consentgroup: patient.consentgroup };
 		console.log('Patient created' + patientInfo);
+		//notifySalesforce
+		serviceSalesForce.getToken()
+			.then(response => {
+				console.log(response.instance_url)
+				var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+				var data  = serviceSalesForce.setCaseData(url, user, patient, "Paciente");
+				 serviceSalesForce.composite(response.access_token, response.instance_url, data)
+				.then(response2 => {
+					console.log(response2)
+					//set id id on DDBB
+					var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
+					Patient.findByIdAndUpdate(patientStored._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, patientUpdated) => {
+						if (err){
+							console.log(`Error updating the patient: ${err}`);
+						}
+						if(patientStored){
+							console.log('Patient updated sales ID');
+						}
+					})
+
+				})
+				.catch(response2 => {
+					console.log(response2)
+				})
+			})
+			.catch(response => {
+				console.log(response)
+			})
 
 	})
 }

@@ -11,6 +11,8 @@ const serviceEmail = require('../../services/email')
 const crypt = require('../../services/crypt')
 const bcrypt = require('bcrypt-nodejs')
 const f29azureService = require("../../services/f29azure")
+const config = require('../../config')
+const serviceSalesForce = require('../../services/salesForce')
 
 function activateUser(req, res) {
 	req.body.email = (req.body.email).toLowerCase();
@@ -419,7 +421,7 @@ function signUp(req, res) {
 				console.log(req.body.role);
 				if (req.body.role == 'User') {
 					var userId = userSaved._id.toString();
-					savePatient(userId, req);
+					savePatient(userId, req, userSaved);
 				}
 
 
@@ -441,7 +443,7 @@ function signUp(req, res) {
 	})
 }
 
-function savePatient(userId, req) {
+function savePatient(userId, req, user) {
 	let patient = new Patient()
 	patient.patientName = ''
 	patient.surname = ''
@@ -474,7 +476,25 @@ function savePatient(userId, req) {
 		//notifySalesforce
 		serviceSalesForce.getToken()
 			.then(response => {
-				console.log(response)
+				var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+				var data  = serviceSalesForce.setCaseData(url, user, patient, "Paciente");
+
+				 serviceSalesForce.composite(response.access_token, response.instance_url, data)
+				.then(response2 => {
+					console.log(response2)
+					var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
+					Patient.findByIdAndUpdate(patientStored._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, patientUpdated) => {
+						if (err){
+							console.log(`Error updating the patient: ${err}`);
+						}
+						if(patientStored){
+							console.log('Patient updated sales ID');
+						}
+					})
+				})
+				.catch(response2 => {
+					console.log(response2)
+				})
 			})
 			.catch(response => {
 				console.log(response)

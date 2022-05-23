@@ -12,11 +12,13 @@ const drugsSchema = Schema({
 	link: String,
 	dose: Number,
 	name: String,
+	salesforceId: String,
 })
 
 const RequestClinSchema = Schema({
 	lat: {type: String, default: ''},
 	lng: {type: String, default: ''},
+	country: {type: String, default: null},
 	notes: {type: String, default: ''},
 	status: {type: String, default: null},
 	updateDate: {type: Date, default: Date.now},
@@ -25,6 +27,7 @@ const RequestClinSchema = Schema({
 	needAssistance: {type: String, default: null},
 	group: { type: String, default: null},
 	drugs: [drugsSchema],
+	salesforceId: {type: String, default: null},
 	createdBy: { type: Schema.Types.ObjectId, ref: "User"}
 })
 
