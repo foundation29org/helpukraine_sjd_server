@@ -8,6 +8,8 @@ const Support = require('../../models/support')
 const Group = require('../../models/group')
 const serviceEmail = require('../../services/email')
 const crypt = require('../../services/crypt')
+const config = require('../../config')
+const serviceSalesForce = require('../../services/salesForce')
 
 
 function sendMsgSupport(req, res){
@@ -29,6 +31,42 @@ function sendMsgSupport(req, res){
 			//guardamos los valores en BD y enviamos Email
 			support.save((err, supportStored) => {
 				if (err) return res.status(500).send({ message: 'Error saving the msg'})
+				//notifySalesforce
+
+				var id = supportStored._id.toString();
+				var idencrypt = crypt.encrypt(id);
+				serviceSalesForce.getToken()
+				.then(response => {
+					var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/VH_ContactosWeb__c/VH_WebExternalId__c/' + idencrypt;
+					var data  = serviceSalesForce.setMsgData(url, supportStored, req.body.userId);
+
+					console.log(JSON.stringify(data));
+
+					serviceSalesForce.composite(response.access_token, response.instance_url, data)
+					.then(response2 => {
+						console.log(JSON.stringify(response2));
+						var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
+						console.log(response2.graphs[0].graphResponse.compositeResponse);
+						console.log(valueId);
+						Support.findByIdAndUpdate(supportStored._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+							if (err){
+								console.log(`Error updating the user: ${err}`);
+							}
+							if(eventdbStored){
+								console.log('User updated sales ID');
+							}
+						})
+					})
+					.catch(response2 => {
+						console.log(response2)
+					})
+				})
+				.catch(response => {
+					console.log(response)
+				})
+				return res.status(200).send({ message: 'Email sent'})
+
+				/*
 				serviceEmail.sendMailSupport(user.email, user.lang, user.role, supportStored, null)
 						.then(response => {
 							return res.status(200).send({ message: 'Email sent'})
@@ -37,7 +75,7 @@ function sendMsgSupport(req, res){
 							//create user, but Failed sending email.
 							//res.status(200).send({ token: serviceAuth.createToken(user),  message: 'Fail sending email'})
 							res.status(500).send({ message: 'Fail sending email'})
-						})
+						})*/
 				
 			})
 		}else{

@@ -253,7 +253,6 @@ function updatePatient (req, res){
 
 							serviceSalesForce.composite(response.access_token, response.instance_url, data)
 							.then(response2 => {
-								console.log(response2)
 								var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
 								Patient.findByIdAndUpdate(patientUpdated._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
 									if (err){
@@ -409,16 +408,79 @@ function saveDrugs (req, res){
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
 			//notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
 			//notifySalesforce
-			serviceSalesForce.getToken()
-					.then(response => {
-						console.log(response)
-					})
-					.catch(response => {
-						console.log(response)
-					})
+			var id = patientUpdated._id.toString();
+			var idencrypt = crypt.encrypt(id);
+			User.findById(patientUpdated.createdBy, (err, user) => {
+				if (err) return res.status(500).send({message: `Error deleting the case: ${err}`})
+				if(user){
+					serviceSalesForce.getToken()
+						.then(response => {
+							var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+							var data  = serviceSalesForce.setCaseData(url, user, patientUpdated, "Paciente");
+							serviceSalesForce.composite(response.access_token, response.instance_url, data)
+							.then(response2 => {
+								if(response2.graphs[0].isSuccessful){
+									var countDrugs = 0;
+									var hasCase = false;
+									for(let i = 0; i < response2.graphs[0].graphResponse.compositeResponse.length; i++){
+										if(response2.graphs[0].graphResponse.compositeResponse[i].referenceId=='newCase'){
+											var valueId = response2.graphs[0].graphResponse.compositeResponse[i].body.id;
+											patientUpdated.salesforceId = valueId;
+											hasCase = true;
+										}else if(response2.graphs[0].graphResponse.compositeResponse[i].referenceId.indexOf('newFarmacos')!=-1){
+											var valueId = response2.graphs[0].graphResponse.compositeResponse[i].body.id;
+											patientUpdated.drugs[countDrugs].salesforceId = valueId;
+											countDrugs++;
+										}
+									}
+									if(countDrugs>0){
+										updateSalesforceIdDrug(patientUpdated);
+									}
+									if(hasCase){
+										updateSalesforceIdRequest(patientUpdated);
+									}
+								}
+								res.status(200).send({message: 'drugs changed', patientUpdated: patientUpdated})
+							})
+							.catch(response2 => {
+								console.log(response2)
+								res.status(200).send({message: 'cant noti notifySalesforce', patientUpdated: patientUpdated})
+							})
+						})
+						.catch(response => {
+							console.log(response)
+							res.status(200).send({message: 'cant noti notifySalesforce', patientUpdated: patientUpdated})
+						})
+				}else{
+					console.log('cant noti notifySalesforce');
+					res.status(200).send({message: 'cant noti notifySalesforce', patientUpdated: patientUpdated})
+				}
+			})
+			//debería devolver cuando tengo los ids de sales forces
+			//res.status(200).send({message: 'drugs changed'})
 
-			res.status(200).send({message: 'drugs changed'})
+	})
+}
 
+function updateSalesforceIdRequest(eventdbUpdated){
+	Patient.findByIdAndUpdate(eventdbUpdated._id, { salesforceId: eventdbUpdated.salesforceId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+		if (err){
+			console.log(`Error updating the patient: ${err}`);
+		}
+		if(eventdbStored){
+			console.log('Event updated sales ID');
+		}
+	})
+}
+
+function updateSalesforceIdDrug(patientUpdated){
+	Patient.findByIdAndUpdate(patientUpdated._id, { drugs: patientUpdated.drugs }, { new: true}, (err,eventdbStored) => {
+		if (err){
+			console.log(`Error updating the patient: ${err}`);
+		}
+		if(eventdbStored){
+			console.log('Event updated sales ID');
+		}
 	})
 }
 
@@ -448,6 +510,35 @@ function notifyGroup(groupid, state, userId){
       })
 }
 
+function deleteDrug(req, res){
+	console.log('--------------_id, drugs---------------------');
+	let patientId= crypt.decrypt(req.params.patientId);
+	var drugs = req.body.drugs
+	//notifySalesforce
+	var salesforceId = drugs[req.body.index].salesforceId;
+	drugs.splice(req.body.index, 1);
+	console.log(salesforceId);
+	serviceSalesForce.getToken()
+	.then(response => {
+		console.log(response.instance_url)
+		 serviceSalesForce.deleteSF(response.access_token, response.instance_url, 'VH_Farmacos__c', salesforceId)
+		.then(response2 => {
+			console.log(response2)
+		})
+		.catch(response2 => {
+			console.log(response2)
+		})
+	})
+	.catch(response => {
+		console.log(response)
+	})
+
+	Patient.findByIdAndUpdate(patientId, { drugs: drugs }, { new: true}, (err,eventdbStored) => {
+		if (err) return res.status(500).send({message: `Error deleting the drug: ${err}`})
+		res.status(200).send({message: `The drug has been deleted`})
+	})
+}
+
 module.exports = {
 	getPatientsUser,
 	getPatient,
@@ -459,5 +550,6 @@ module.exports = {
 	getConsentGroup,
 	setChecks,
 	getChecks,
-	saveDrugs
+	saveDrugs,
+	deleteDrug
 }

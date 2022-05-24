@@ -63,6 +63,7 @@ const UserSchema = Schema({
 	iscaregiver: { type: Boolean, default: false },
 	lat: {type: String, default: ''},
 	lng: {type: String, default: ''},
+	salesforceId: {type: String, default: null},
 	checks: {type: checksSchema, default: {
 		check1: false,
 		check2: false,
