@@ -344,7 +344,7 @@ function newPass(req, res) {
  * @apiName signUp
  * @apiVersion 1.0.0
  * @apiGroup Account
- * @apiDescription This method allows you to create a user account in Relief Ukraine
+ * @apiDescription This method allows you to create a user account in Rare Diseases Hub Ukraine
  * @apiExample {js} Example usage:
  *  var passwordsha512 = sha512("fjie76?vDh");
  *  var formValue = { email: "example@ex.com", userName: "Peter", password: passwordsha512, lang: "en", group: "None"};

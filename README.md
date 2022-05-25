@@ -2,6 +2,6 @@
 	<img align="right" width="100px" src="/img/logo-reliefukraine.png">
 </div>			
 
-Relief Ukraine
+Rare Diseases Hub Ukraine
 ===============================================================================================================================
 [![MIT license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)

@@ -19,11 +19,11 @@ var options = {
 
 function sendMailVerifyEmail (email, userName, randomstring, lang, group){
 
-  var subjectlang='Relief Ukraine - Activate the account';
+  var subjectlang='Rare Diseases Hub Ukraine - Activate the account';
   if(lang=='es'){
-    subjectlang='Relief Ukraine - Activa la cuenta';
+    subjectlang='Rare Diseases Hub Ukraine - Activa la cuenta';
   }else if(lang=='uk'){
-    subjectlang='Relief Ukraine - Активуйте обліковий запис';
+    subjectlang='Rare Diseases Hub Ukraine - Активуйте обліковий запис';
   }
   const decoded = new Promise((resolve, reject) => {
     var maillistbcc = [
@@ -73,7 +73,7 @@ function sendMailFailSend (email){
       to: emailToFinal,
       from: TRANSPORTER_OPTIONS.auth.user,
       bcc: maillistbcc,
-      subject: 'Message for support. Fail email Relief Ukraine: '+ email,
+      subject: 'Message for support. Fail email Rare Diseases Hub Ukraine: '+ email,
       template: 'mail_support/fail',
       context: {
         email : email
@@ -92,11 +92,11 @@ function sendMailFailSend (email){
 }
 
 function sendMailRecoverPass (email, userName, randomstring, lang){
-  var subjectlang='Relief Ukraine - Account Recovery';
+  var subjectlang='Rare Diseases Hub Ukraine - Account Recovery';
   if(lang=='es'){
-    subjectlang='Relief Ukraine - Recuperación de la cuenta';
+    subjectlang='Rare Diseases Hub Ukraine - Recuperación de la cuenta';
   }else if(lang=='uk'){
-    subjectlang='Relief Ukraine - Відновлення облікового запису';
+    subjectlang='Rare Diseases Hub Ukraine - Відновлення облікового запису';
   }
   const decoded = new Promise((resolve, reject) => {
 
@@ -161,7 +161,7 @@ function sendMailSupport (email, lang, role, supportStored, emailTo){
       to: emailToFinal,
       from: TRANSPORTER_OPTIONS.auth.user,
       bcc: maillistbcc,
-      subject: 'Message for support. Relief Ukraine Id: '+ supportStored._id,
+      subject: 'Message for support. Rare Diseases Hub Ukraine Id: '+ supportStored._id,
       template: 'mail_support/_en',
       context: {
         email : email,
@@ -189,11 +189,11 @@ function sendMailSupport (email, lang, role, supportStored, emailTo){
 }
 
 function sendMailChangeStatus (email, userName, lang, group, statusInfo, groupEmail){
-  var subjectlang='Relief Ukraine - Information about your case progress';
+  var subjectlang='Rare Diseases Hub Ukraine - Information about your case progress';
   if(lang=='es'){
-    subjectlang='Relief Ukraine - Información sobre el progreso de su caso';
+    subjectlang='Rare Diseases Hub Ukraine - Información sobre el progreso de su caso';
   }else if(lang=='uk'){
-    subjectlang='Relief Ukraine - Інформація про хід справи';
+    subjectlang='Rare Diseases Hub Ukraine - Інформація про хід справи';
   }
 
   const decoded = new Promise((resolve, reject) => {
@@ -235,11 +235,11 @@ function sendMailChangeStatus (email, userName, lang, group, statusInfo, groupEm
 }
 
 function sendNotificationToTheNewUser (emailUser, userName, lang){
-  var subjectlang='Relief Ukraine -  Information about your case progress';
+  var subjectlang='Rare Diseases Hub Ukraine -  Information about your case progress';
   if(lang=='es'){
-    subjectlang='Relief Ukraine - Información sobre el progreso de su caso';
+    subjectlang='Rare Diseases Hub Ukraine - Información sobre el progreso de su caso';
   }else if(lang=='uk'){
-    subjectlang='Relief Ukraine - Інформація про хід справи';
+    subjectlang='Rare Diseases Hub Ukraine - Інформація про хід справи';
   }
   const decoded = new Promise((resolve, reject) => {
     var maillistbcc = [
@@ -276,7 +276,7 @@ function sendNotificationToTheNewUser (emailUser, userName, lang){
 }
 
 function sendNotificationNewUser (email, emailUser){
-  var subjectlang='Relief Ukraine - A new user has signed up.';
+  var subjectlang='Rare Diseases Hub Ukraine - A new user has signed up.';
 
   const decoded = new Promise((resolve, reject) => {
     var maillistbcc = [
@@ -313,7 +313,7 @@ function sendNotificationNewUser (email, emailUser){
 }
 
 function sendNotificationUpdateUser (email, emailUser){
-  var subjectlang='Relief Ukraine - A user has modified their data.';
+  var subjectlang='Rare Diseases Hub Ukraine - A user has modified their data.';
 
   const decoded = new Promise((resolve, reject) => {
     var maillistbcc = [
