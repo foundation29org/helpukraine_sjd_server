@@ -262,7 +262,7 @@
     "name": "signUp",
     "version": "1.0.0",
     "group": "Account",
-    "description": "<p>This method allows you to create a user account in Relief Ukraine</p>",
+    "description": "<p>This method allows you to create a user account in Rare Diseases Hub Ukraine</p>",
     "examples": [
       {
         "title": "Example usage:",
@@ -782,7 +782,7 @@
     "url": "https://virtualhubukraine.azurewebsites.net/api/langs/",
     "title": "Get languages",
     "name": "getLangs",
-    "description": "<p>This method return the languages available in Relief Ukraine. you get a list of languages, and for each one you have the name and the code. We currently have 5 languages, but we will include more. The current languages are:</p> <ul> <li>English: en</li> <li>Spanish: es</li> <li>German: de</li> <li>Dutch: nl</li> <li>Portuguese: pt</li> </ul>",
+    "description": "<p>This method return the languages available in Rare Diseases Hub Ukraine. you get a list of languages, and for each one you have the name and the code. We currently have 5 languages, but we will include more. The current languages are:</p> <ul> <li>English: en</li> <li>Spanish: es</li> <li>German: de</li> <li>Dutch: nl</li> <li>Portuguese: pt</li> </ul>",
     "group": "Languages",
     "version": "1.0.0",
     "examples": [

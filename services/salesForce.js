@@ -27,7 +27,6 @@ function getToken (){
         console.error(error)
         resolve(error)
       } 
-      console.log(JSON.parse(response.body));
       resolve(JSON.parse(response.body))
 
     });
@@ -56,7 +55,6 @@ function composite (access_token, host, data){
         console.error(error)
         resolve(error)
       } 
-      console.log(JSON.parse(response.body));
       resolve(JSON.parse(response.body))
 
     });
@@ -65,8 +63,6 @@ function composite (access_token, host, data){
 }
 
 function setCaseData(url, user, patient, type){
-  console.log(patient);
-
   var data  = {
     "graphs":[
        {
@@ -108,7 +104,6 @@ function setCaseData(url, user, patient, type){
    };
 
    if(patient.drugs.length>0){
-    console.log(patient.drugs);
     for(let i = 0; i < patient.drugs.length; i++){
       var urlDrug = "/services/data/"+config.SALES_FORCE.version+"/sobjects/VH_Farmacos__c/VH_WebExternalId__c/"+patient.drugs[i]._id;
       data.graphs[0].compositeRequest.push(
@@ -232,11 +227,8 @@ function deleteSF (access_token, host, SobjectName, SobjectId){
       if (error) {
         console.error(error)
         resolve(error)
-      } 
-      console.log(response.statusCode)
-      console.log(response.body);
+      }
       resolve(response.statusCode)
-
     });
   });
   return decoded

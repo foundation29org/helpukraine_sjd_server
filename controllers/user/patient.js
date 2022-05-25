@@ -6,9 +6,6 @@
 const Patient = require('../../models/patient')
 const User = require('../../models/user')
 const crypt = require('../../services/crypt')
-const f29azureService = require("../../services/f29azure")
-const Group = require('../../models/group')
-const serviceEmail = require('../../services/email')
 const serviceSalesForce = require('../../services/salesForce')
 const config = require('../../config')
 
@@ -238,7 +235,6 @@ function updatePatient (req, res){
 		var idencrypt= crypt.encrypt(id);
 		var patientInfo = {sub:idencrypt, patientName: patientUpdated.patientName, surname: patientUpdated.surname, birthDate: patientUpdated.birthDate, gender: patientUpdated.gender, country: patientUpdated.country, previousDiagnosis: patientUpdated.previousDiagnosis, group: patientUpdated.group, consentgroup: patientUpdated.consentgroup};
 		
-		//notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
 		//notifySalesforce
 			User.findById(patientUpdated.createdBy, (err, user) => {
 				if (err) return res.status(500).send({message: `Error deleting the case: ${err}`})
@@ -337,13 +333,6 @@ function getStatus (req, res){
 
 function setStatus (req, res){
 	let patientId= crypt.decrypt(req.params.patientId);
-	/*serviceEmail.sendMailChangeStatus(req.body.email, req.body.userName, req.body.lang, req.body.group, req.body.statusInfo, req.body.groupEmail)
-					.then(response => {
-						console.log('Email sent' )
-					})
-					.catch(response => {
-						console.log('Fail sending email' )
-					})*/
 	Patient.findByIdAndUpdate(patientId, { status: req.body.status }, {new: true}, (err,patientUpdated) => {
 		if(patientUpdated){
 			return res.status(200).send({message: 'Updated'})
@@ -406,7 +395,6 @@ function saveDrugs (req, res){
 
 	Patient.findByIdAndUpdate(patientId, { drugs: req.body.drugs }, { new: true}, (err,patientUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-			//notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
 			//notifySalesforce
 			var id = patientUpdated._id.toString();
 			var idencrypt = crypt.encrypt(id);
@@ -484,40 +472,12 @@ function updateSalesforceIdDrug(patientUpdated){
 	})
 }
 
-function notifyGroup(groupid, state, userId){
-	Group.findById(groupid, function (err, group) {
-        if(group){
-			if(group.notifications.isNew && state == 'New'){
-				User.findById(userId, { "_id": false, "password": false, "__v": false, "confirmationCode": false, "loginAttempts": false, "confirmed": false, "role": false, "lastLogin": false }, (err, user) => {
-					if (user) {
-						serviceEmail.sendNotificationNewUser(group.email, user.email)
-						if(groupid == '622f83174c824c0dec16c78b'){
-							serviceEmail.sendNotificationToTheNewUser(user.email, user.userName, user.lang)
-						}
-					}
-				})
-				
-			}
-			if(group.notifications.changeData && state == 'Update'){
-				User.findById(userId, { "_id": false, "password": false, "__v": false, "confirmationCode": false, "loginAttempts": false, "confirmed": false, "role": false, "lastLogin": false }, (err, user) => {
-					if (user) {
-						serviceEmail.sendNotificationUpdateUser(group.email, user.email)
-					}
-				})
-				
-			}
-		}
-      })
-}
-
 function deleteDrug(req, res){
-	console.log('--------------_id, drugs---------------------');
 	let patientId= crypt.decrypt(req.params.patientId);
 	var drugs = req.body.drugs
 	//notifySalesforce
 	var salesforceId = drugs[req.body.index].salesforceId;
 	drugs.splice(req.body.index, 1);
-	console.log(salesforceId);
 	serviceSalesForce.getToken()
 	.then(response => {
 		console.log(response.instance_url)
