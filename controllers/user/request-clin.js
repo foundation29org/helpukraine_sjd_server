@@ -6,8 +6,6 @@
 const RequestClin = require('../../models/request-clin')
 const crypt = require('../../services/crypt')
 const User = require('../../models/user')
-const Group = require('../../models/group')
-const serviceEmail = require('../../services/email')
 const serviceSalesForce = require('../../services/salesForce')
 const config = require('../../config')
 
@@ -129,7 +127,6 @@ function saveRequest (req, res){
 			res.status(500).send({message: `Failed to save in the database: ${err} `})
 		}
 		if(eventdbStored){
-			//notifyGroup(eventdb.group, 'New', userId);
 			//notifySalesforce
 			var id = eventdbStored._id.toString();
 			var idencrypt = crypt.encrypt(id);
@@ -216,7 +213,6 @@ function updateRequest (req, res){
 	update.updateDate = Date.now();
 	RequestClin.findByIdAndUpdate(requestId, update, { new: true}, (err,eventdbUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-		//notifyGroup(eventdbUpdated.group, 'Update', eventdbUpdated.createdBy);
 		//notifySalesforce
 
 			var id = eventdbUpdated._id.toString();
@@ -274,32 +270,6 @@ function updateRequest (req, res){
 	})
 }
 
-function notifyGroup(groupid, state, userId){
-	Group.findById(groupid, function (err, group) {
-        if(group){
-			if(group.notifications.isNew && state == 'New'){
-				User.findById(userId, { "_id": false, "password": false, "__v": false, "confirmationCode": false, "loginAttempts": false, "confirmed": false, "role": false, "lastLogin": false }, (err, user) => {
-					if (user) {
-						serviceEmail.sendNotificationNewUser(group.email, user.email)
-						if(groupid == '622f83174c824c0dec16c78b'){
-							serviceEmail.sendNotificationToTheNewUser(user.email, user.userName, user.lang)
-						}
-					}
-				})
-				
-			}
-			if(group.notifications.changeData && state == 'Update'){
-				User.findById(userId, { "_id": false, "password": false, "__v": false, "confirmationCode": false, "loginAttempts": false, "confirmed": false, "role": false, "lastLogin": false }, (err, user) => {
-					if (user) {
-						serviceEmail.sendNotificationUpdateUser(group.email, user.email)
-					}
-				})
-				
-			}
-		}
-      })
-}
-
 
 function deleteRequest (req, res){
 	let requestId=req.params.requestId
@@ -309,10 +279,8 @@ function deleteRequest (req, res){
 		if (eventdb){
 			//notifySalesforce
 			var salesforceId = eventdb.salesforceId;
-			console.log(salesforceId);
 			serviceSalesForce.getToken()
 			.then(response => {
-				console.log(response.instance_url)
 				 serviceSalesForce.deleteSF(response.access_token, response.instance_url, 'Case', salesforceId)
 				.then(response2 => {
 					console.log(response2)
@@ -370,13 +338,6 @@ function deleteRequest (req, res){
 
 function setStatus (req, res){
 	let requestId= crypt.decrypt(req.params.requestId);
-	/*serviceEmail.sendMailChangeStatus(req.body.email, req.body.userName, req.body.lang, req.body.group, req.body.statusInfo, req.body.groupEmail)
-					.then(response => {
-						console.log('Email sent' )
-					})
-					.catch(response => {
-						console.log('Fail sending email' )
-					})*/
 
 	RequestClin.findByIdAndUpdate(requestId, { status: req.body.status }, {new: true}, (err,patientUpdated) => {
 		if(patientUpdated){
@@ -415,16 +376,13 @@ function getGroupRequest (req, res){
 
 
 function deleteDrug(req, res){
-	console.log('--------------_id, drugs---------------------');
 	let requestId= req.params.requestId;
 	var drugs = req.body.drugs
 	//notifySalesforce
 	var salesforceId = drugs[req.body.index].salesforceId;
 	drugs.splice(req.body.index, 1);
-	console.log(salesforceId);
 	serviceSalesForce.getToken()
 	.then(response => {
-		console.log(response.instance_url)
 		 serviceSalesForce.deleteSF(response.access_token, response.instance_url, 'VH_Farmacos__c', salesforceId)
 		.then(response2 => {
 			console.log(response2)

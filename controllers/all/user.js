@@ -10,7 +10,6 @@ const serviceAuth = require('../../services/auth')
 const serviceEmail = require('../../services/email')
 const crypt = require('../../services/crypt')
 const bcrypt = require('bcrypt-nodejs')
-const f29azureService = require("../../services/f29azure")
 const config = require('../../config')
 const serviceSalesForce = require('../../services/salesForce')
 

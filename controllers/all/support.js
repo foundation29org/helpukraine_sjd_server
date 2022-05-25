@@ -44,14 +44,10 @@ function sendMsgSupport(req, res){
 						var patientSalesforceId = await getPatient(userId);
 						data  = serviceSalesForce.setMsgData(url, supportStored, patientSalesforceId);
 					}
-					console.log(JSON.stringify(data));
 
 					serviceSalesForce.composite(response.access_token, response.instance_url, data)
 					.then(response2 => {
-						console.log(JSON.stringify(response2));
 						var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
-						console.log(response2.graphs[0].graphResponse.compositeResponse);
-						console.log(valueId);
 						Support.findByIdAndUpdate(supportStored._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
 							if (err){
 								console.log(`Error updating the user: ${err}`);
@@ -68,19 +64,18 @@ function sendMsgSupport(req, res){
 				.catch(response => {
 					console.log(response)
 				})
-				return res.status(200).send({ message: 'Email sent'})
 
-				/*
 				serviceEmail.sendMailSupport(user.email, user.lang, user.role, supportStored, null)
 						.then(response => {
-							return res.status(200).send({ message: 'Email sent'})
+							//return res.status(200).send({ message: 'Email sent'})
 						})
 						.catch(response => {
 							//create user, but Failed sending email.
 							//res.status(200).send({ token: serviceAuth.createToken(user),  message: 'Fail sending email'})
-							res.status(500).send({ message: 'Fail sending email'})
-						})*/
-				
+							//res.status(500).send({ message: 'Fail sending email'})
+						})
+
+				return res.status(200).send({ message: 'Email sent'})
 			})
 		}else{
 			return res.status(500).send({ message: 'user not exists'})
