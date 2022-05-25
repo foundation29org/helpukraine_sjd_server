@@ -27,7 +27,8 @@ function sendMailVerifyEmail (email, userName, randomstring, lang, group){
   }
   const decoded = new Promise((resolve, reject) => {
     var maillistbcc = [
-      TRANSPORTER_OPTIONS.auth.user
+      TRANSPORTER_OPTIONS.auth.user,
+      "maria.larrabe@foundation29.org"
     ];
 
     var mailOptions = {
@@ -63,7 +64,8 @@ function sendMailVerifyEmail (email, userName, randomstring, lang, group){
 
 function sendMailFailSend (email){
     var maillistbcc = [
-      TRANSPORTER_OPTIONS.auth.user
+      TRANSPORTER_OPTIONS.auth.user,
+      "maria.larrabe@foundation29.org"
     ];
 
     var emailToFinal = 'support@foundation29.org'
@@ -100,6 +102,7 @@ function sendMailRecoverPass (email, userName, randomstring, lang){
 
     var maillistbcc = [
       TRANSPORTER_OPTIONS.auth.user,
+      "maria.larrabe@foundation29.org"
     ];
 
     var mailOptions = {
@@ -135,7 +138,6 @@ function sendMailRecoverPass (email, userName, randomstring, lang){
 
 function sendMailSupport (email, lang, role, supportStored, emailTo){
   const decoded = new Promise((resolve, reject) => {
-    var urlImg = 'https://reliefukraine.net/assets/img/logo-reliefukraine.png';
     var attachments = [];
     if(supportStored.files.length>0){
       supportStored.files.forEach(function(file) {
@@ -146,7 +148,8 @@ function sendMailSupport (email, lang, role, supportStored, emailTo){
       });
     }
     var maillistbcc = [
-      TRANSPORTER_OPTIONS.auth.user
+      TRANSPORTER_OPTIONS.auth.user,
+      "maria.larrabe@foundation29.org"
     ];
 
     var emailToFinal = 'support@foundation29.org'
@@ -195,7 +198,8 @@ function sendMailChangeStatus (email, userName, lang, group, statusInfo, groupEm
 
   const decoded = new Promise((resolve, reject) => {
     var maillistbcc = [
-      TRANSPORTER_OPTIONS.auth.user
+      TRANSPORTER_OPTIONS.auth.user,
+      "maria.larrabe@foundation29.org"
     ];
 
     var mailOptions = {
@@ -239,7 +243,8 @@ function sendNotificationToTheNewUser (emailUser, userName, lang){
   }
   const decoded = new Promise((resolve, reject) => {
     var maillistbcc = [
-      TRANSPORTER_OPTIONS.auth.user
+      TRANSPORTER_OPTIONS.auth.user,
+      "maria.larrabe@foundation29.org"
     ];
 
     var mailOptions = {
@@ -274,9 +279,9 @@ function sendNotificationNewUser (email, emailUser){
   var subjectlang='Relief Ukraine - A new user has signed up.';
 
   const decoded = new Promise((resolve, reject) => {
-    var urlImg = 'https://reliefukraine.net/assets/img/logo-reliefukraine.png';
     var maillistbcc = [
-      TRANSPORTER_OPTIONS.auth.user
+      TRANSPORTER_OPTIONS.auth.user,
+      "maria.larrabe@foundation29.org"
     ];
 
     var mailOptions = {
@@ -286,8 +291,7 @@ function sendNotificationNewUser (email, emailUser){
       subject: subjectlang,
       template: 'notification_new_user/_en',
       context: {
-        emailUser : emailUser,
-        urlImg: urlImg
+        emailUser : emailUser
       }
     };
 
@@ -312,9 +316,9 @@ function sendNotificationUpdateUser (email, emailUser){
   var subjectlang='Relief Ukraine - A user has modified their data.';
 
   const decoded = new Promise((resolve, reject) => {
-    var urlImg = 'https://reliefukraine.net/assets/img/logo-reliefukraine.png';
     var maillistbcc = [
-      TRANSPORTER_OPTIONS.auth.user
+      TRANSPORTER_OPTIONS.auth.user,
+      "maria.larrabe@foundation29.org"
     ];
 
     var mailOptions = {
@@ -324,8 +328,7 @@ function sendNotificationUpdateUser (email, emailUser){
       subject: subjectlang,
       template: 'notification_update_user/_en',
       context: {
-        emailUser : emailUser,
-        urlImg: urlImg
+        emailUser : emailUser
       }
     };
 

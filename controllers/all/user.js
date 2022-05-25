@@ -11,6 +11,8 @@ const serviceEmail = require('../../services/email')
 const crypt = require('../../services/crypt')
 const bcrypt = require('bcrypt-nodejs')
 const f29azureService = require("../../services/f29azure")
+const config = require('../../config')
+const serviceSalesForce = require('../../services/salesForce')
 
 function activateUser(req, res) {
 	req.body.email = (req.body.email).toLowerCase();
@@ -41,14 +43,14 @@ function activateUser(req, res) {
 
 
 /**
- * @api {post} https://health29.org/api/api/recoverpass Request password change
+ * @api {post} https://virtualhubukraine.azurewebsites.net/api/api/recoverpass Request password change
  * @apiName recoverPass
  * @apiVersion 1.0.0
  * @apiGroup Account
  * @apiDescription This method allows you to send a request to change the password. At the end of this call, you need to check the email account to call [update password](#api-Account-updatePass).
  * @apiExample {js} Example usage:
  *   var formValue = { email: "example@ex.com"};
- *   this.http.post('https://health29.org/api/recoverpass',formValue)
+ *   this.http.post('https://virtualhubukraine.azurewebsites.net/api/recoverpass',formValue)
  *    .subscribe( (res : any) => {
  *      if(res.message == "Email sent"){
  *        console.log("Account recovery email sent. Check the email to change the password");
@@ -118,7 +120,7 @@ function recoverPass(req, res) {
 }
 
 /**
- * @api {post} https://health29.org/api/api/updatepass Update password
+ * @api {post} https://virtualhubukraine.azurewebsites.net/api/api/updatepass Update password
  * @apiName updatePass
  * @apiVersion 1.0.0
  * @apiGroup Account
@@ -127,7 +129,7 @@ function recoverPass(req, res) {
  *  var passwordsha512 = sha512("fjie76?vDh");
  *  var param = this.router.parseUrl(this.router.url).queryParams;
  *  var formValue = { email: param.email, password: passwordsha512, randomCodeRecoverPass: param.key };
- *   this.http.post('https://health29.org/api/updatepass',formValue)
+ *   this.http.post('https://virtualhubukraine.azurewebsites.net/api/updatepass',formValue)
  *    .subscribe( (res : any) => {
  *      if(res.message == "password changed"){
  *        console.log("Password changed successfully");
@@ -217,7 +219,7 @@ function updatePass(req, res) {
 }
 
 /**
- * @api {post} https://health29.org/api/api/newPass New password
+ * @api {post} https://virtualhubukraine.azurewebsites.net/api/api/newPass New password
  * @apiName newPass
  * @apiVersion 1.0.0
  * @apiGroup Account
@@ -226,7 +228,7 @@ function updatePass(req, res) {
  *  var passwordsha512 = sha512("fjie76?vDh");
  *  var newpasswordsha512 = sha512("jisd?87Tg");
  *  var formValue = { email: example@ex.com, actualpassword: passwordsha512, newpassword: newpasswordsha512 };
- *   this.http.post('https://health29.org/api/newPass',formValue)
+ *   this.http.post('https://virtualhubukraine.azurewebsites.net/api/newPass',formValue)
  *    .subscribe( (res : any) => {
  *      if(res.message == "password changed"){
  *        console.log("Password changed successfully");
@@ -338,7 +340,7 @@ function newPass(req, res) {
 }
 
 /**
- * @api {post} https://health29.org/api/api/signUp New account
+ * @api {post} https://virtualhubukraine.azurewebsites.net/api/api/signUp New account
  * @apiName signUp
  * @apiVersion 1.0.0
  * @apiGroup Account
@@ -346,7 +348,7 @@ function newPass(req, res) {
  * @apiExample {js} Example usage:
  *  var passwordsha512 = sha512("fjie76?vDh");
  *  var formValue = { email: "example@ex.com", userName: "Peter", password: passwordsha512, lang: "en", group: "None"};
- *   this.http.post('https://health29.org/api/signup',formValue)
+ *   this.http.post('https://virtualhubukraine.azurewebsites.net/api/signup',formValue)
  *    .subscribe( (res : any) => {
  *      if(res.message == "Account created"){
  *        console.log("Check the email to activate the account");
@@ -419,8 +421,46 @@ function signUp(req, res) {
 				console.log(req.body.role);
 				if (req.body.role == 'User') {
 					var userId = userSaved._id.toString();
-					savePatient(userId, req);
+					savePatient(userId, req, userSaved);
 				}
+				if(req.body.role == 'Clinical'){
+					var id = userSaved._id.toString();
+					var idencrypt = crypt.encrypt(id);
+					serviceSalesForce.getToken()
+					.then(response => {
+						var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+	
+							var type = "Profesional-Organizacion";
+							var data  = serviceSalesForce.setUserData(url, user, type);
+	
+							console.log(JSON.stringify(data));
+	
+							serviceSalesForce.composite(response.access_token, response.instance_url, data)
+							.then(response2 => {
+								console.log(JSON.stringify(response2));
+								var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
+								console.log(response2.graphs[0].graphResponse.compositeResponse);
+								console.log(valueId);
+								User.findByIdAndUpdate(userSaved._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+									if (err){
+										console.log(`Error updating the user: ${err}`);
+									}
+									if(eventdbStored){
+										console.log('User updated sales ID');
+									}
+								})
+							})
+							.catch(response2 => {
+								console.log(response2)
+							})
+						
+					})
+					.catch(response => {
+						console.log(response)
+					})
+				}
+				
+
 
 
 
@@ -441,7 +481,7 @@ function signUp(req, res) {
 	})
 }
 
-function savePatient(userId, req) {
+function savePatient(userId, req, user) {
 	let patient = new Patient()
 	patient.patientName = ''
 	patient.surname = ''
@@ -462,25 +502,41 @@ function savePatient(userId, req) {
 	patient.relationship = req.body.relationship
 	patient.previousDiagnosis = req.body.previousDiagnosis
 	patient.consentgroup = req.body.consentgroup
-	patient.avatar = req.body.avatar
 	patient.createdBy = userId
 
-	if (req.body.avatar == undefined) {
-		if (patient.gender != undefined) {
-			if (patient.gender == 'male') {
-				patient.avatar = 'boy-0'
-			} else if (patient.gender == 'female') {
-				patient.avatar = 'girl-0'
-			}
-		}
-	}
 	// when you save, returns an id in patientStored to access that patient
 	patient.save(async (err, patientStored) => {
 		if (err) console.log({ message: `Failed to save in the database: ${err} ` })
 		var id = patientStored._id.toString();
 		var idencrypt = crypt.encrypt(id);
-		var patientInfo = { sub: idencrypt, patientName: patient.patientName, surname: patient.surname, birthDate: patient.birthDate, gender: patient.gender, country: patient.country, previousDiagnosis: patient.previousDiagnosis, avatar: patient.avatar, consentgroup: patient.consentgroup };
+		var patientInfo = { sub: idencrypt, patientName: patient.patientName, surname: patient.surname, birthDate: patient.birthDate, gender: patient.gender, country: patient.country, previousDiagnosis: patient.previousDiagnosis, consentgroup: patient.consentgroup };
 		console.log('Patient created' + patientInfo);
+		//notifySalesforce
+		serviceSalesForce.getToken()
+			.then(response => {
+				var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+				var data  = serviceSalesForce.setCaseData(url, user, patient, "Paciente");
+
+				 serviceSalesForce.composite(response.access_token, response.instance_url, data)
+				.then(response2 => {
+					console.log(response2)
+					var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
+					Patient.findByIdAndUpdate(patientStored._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, patientUpdated) => {
+						if (err){
+							console.log(`Error updating the patient: ${err}`);
+						}
+						if(patientStored){
+							console.log('Patient updated sales ID');
+						}
+					})
+				})
+				.catch(response2 => {
+					console.log(response2)
+				})
+			})
+			.catch(response => {
+				console.log(response)
+			})
 
 	})
 }
@@ -522,7 +578,7 @@ function sendEmail(req, res) {
 	})
 }
 /**
- * @api {post} https://health29.org/api/api/signin Get the token (and the userId)
+ * @api {post} https://virtualhubukraine.azurewebsites.net/api/api/signin Get the token (and the userId)
  * @apiName signIn
  * @apiVersion 1.0.0
  * @apiGroup Access token
@@ -531,7 +587,7 @@ function sendEmail(req, res) {
  * @apiExample {js} Example usage:
  *  var passwordsha512 = sha512("fjie76?vDh");
  *  var formValue = { email: "aa@aa.com", password: passwordsha512 };
- *   this.http.post('https://health29.org/api/signin',formValue)
+ *   this.http.post('https://virtualhubukraine.azurewebsites.net/api/signin',formValue)
  *    .subscribe( (res : any) => {
  *      if(res.message == "You have successfully logged in"){
  *        console.log(res.lang);
@@ -640,13 +696,13 @@ function signIn(req, res) {
 
 
 /**
- * @api {get} https://health29.org/api/users/:id Get user
+ * @api {get} https://virtualhubukraine.azurewebsites.net/api/users/:id Get user
  * @apiName getUser
  * @apiVersion 1.0.0
  * @apiGroup Users
  * @apiDescription This methods read data of a User
  * @apiExample {js} Example usage:
- *   this.http.get('https://health29.org/api/users/'+userId)
+ *   this.http.get('https://virtualhubukraine.azurewebsites.net/api/users/'+userId)
  *    .subscribe( (res : any) => {
  *      console.log(res.userName);
  *   }, (err) => {
@@ -708,13 +764,13 @@ function getSettings(req, res) {
 
 
 /**
- * @api {put} https://health29.org/api/users/:id Update user
+ * @api {put} https://virtualhubukraine.azurewebsites.net/api/users/:id Update user
  * @apiName updateUser
  * @apiVersion 1.0.0
  * @apiDescription This method allows to change the user's data
  * @apiGroup Users
  * @apiExample {js} Example usage:
- *   this.http.put('https://health29.org/api/users/'+userId, this.user)
+ *   this.http.put('https://virtualhubukraine.azurewebsites.net/api/users/'+userId, this.user)
  *    .subscribe( (res : any) => {
  *      console.log('User update: '+ res.user);
  *     }, (err) => {
@@ -866,6 +922,29 @@ function changeiscaregiver (req, res){
 	})
 }
 
+function setChecks (req, res){
+
+	let userId= crypt.decrypt(req.params.userId);
+
+	User.findByIdAndUpdate(userId, { checks: req.body.checks }, {select: '-createdBy', new: true}, (err,patientUpdated) => {
+		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
+
+			res.status(200).send({message: 'checks changed'})
+
+	})
+}
+
+function getChecks (req, res){
+
+	let userId= crypt.decrypt(req.params.userId);
+
+	User.findById(userId, {"_id" : false , "createdBy" : false }, (err,patient) => {
+		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
+			res.status(200).send({checks: patient.checks})
+
+	})
+}
+
 module.exports = {
 	activateUser,
 	recoverPass,
@@ -883,5 +962,7 @@ module.exports = {
 	getPatientEmail,
 	isVerified,
 	changeiscaregiver,
-	setPosition
+	setPosition,
+	setChecks,
+	getChecks
 }

@@ -9,15 +9,17 @@ const crypt = require('../../services/crypt')
 const f29azureService = require("../../services/f29azure")
 const Group = require('../../models/group')
 const serviceEmail = require('../../services/email')
+const serviceSalesForce = require('../../services/salesForce')
+const config = require('../../config')
 
 /**
- * @api {get} https://health29.org/api/patients-all/:userId Get patient list of a user
+ * @api {get} https://virtualhubukraine.azurewebsites.net/api/patients-all/:userId Get patient list of a user
  * @apiName getPatientsUser
  * @apiDescription This method read the patient list of a user. For each patient you have, you will get: patientId, name, and last name.
  * @apiGroup Patients
  * @apiVersion 1.0.0
  * @apiExample {js} Example usage:
- *   this.http.get('https://health29.org/api/patients-all/'+userId)
+ *   this.http.get('https://virtualhubukraine.azurewebsites.net/api/patients-all/'+userId)
  *    .subscribe( (res : any) => {
  *      console.log('patient list: '+ res.listpatients);
  *      if(res.listpatients.length>0){
@@ -103,13 +105,13 @@ function getPatientsUser (req, res){
 
 
 /**
- * @api {get} https://health29.org/api/patients/:patientId Get patient
+ * @api {get} https://virtualhubukraine.azurewebsites.net/api/patients/:patientId Get patient
  * @apiName getPatient
  * @apiDescription This method read data of a Patient
  * @apiGroup Patients
  * @apiVersion 1.0.0
  * @apiExample {js} Example usage:
- *   this.http.get('https://health29.org/api/patients/'+patientId)
+ *   this.http.get('https://virtualhubukraine.azurewebsites.net/api/patients/'+patientId)
  *    .subscribe( (res : any) => {
  *      console.log('patient info: '+ res.patient);
  *     }, (err) => {
@@ -175,14 +177,14 @@ function getPatient (req, res){
 }
 
 /**
- * @api {put} https://health29.org/api/patients/:patientId Update Patient
+ * @api {put} https://virtualhubukraine.azurewebsites.net/api/patients/:patientId Update Patient
  * @apiName updatePatient
  * @apiDescription This method allows to change the data of a patient.
  * @apiGroup Patients
  * @apiVersion 1.0.0
  * @apiExample {js} Example usage:
  *   var patient = {patientName: '', surname: '', street: '', postalCode: '', citybirth: '', provincebirth: '', countrybirth: null, city: '', province: '', country: null, phone1: '', phone2: '', birthDate: null, gender: null, siblings: [], parents: []};
- *   this.http.put('https://health29.org/api/patients/'+patientId, patient)
+ *   this.http.put('https://virtualhubukraine.azurewebsites.net/api/patients/'+patientId, patient)
  *    .subscribe( (res : any) => {
  *      console.log('patient info: '+ res.patientInfo);
  *     }, (err) => {
@@ -229,30 +231,49 @@ function getPatient (req, res){
 function updatePatient (req, res){
 	let patientId= crypt.decrypt(req.params.patientId);
 	let update = req.body
-  var avatar = '';
-  if(req.body.avatar==undefined){
-    if(req.body.gender!=undefined){
-      if(req.body.gender=='male'){
-				avatar='boy-0'
-			}else if(req.body.gender=='female'){
-				avatar='girl-0'
-			}
-    }
-  }else{
-    avatar = req.body.avatar;
-  }
   Patient.findByIdAndUpdate(patientId, update, {new: true}, async (err,patientUpdated) => {
-  //Patient.findByIdAndUpdate(patientId, { gender: req.body.gender, birthDate: req.body.birthDate, patientName: req.body.patientName, surname: req.body.surname, relationship: req.body.relationship, country: req.body.country, previousDiagnosis: req.body.previousDiagnosis, avatar: avatar, group: req.body.group, consentgroup: req.body.consentgroup }, {new: true}, async (err,patientUpdated) => {
+  //Patient.findByIdAndUpdate(patientId, { gender: req.body.gender, birthDate: req.body.birthDate, patientName: req.body.patientName, surname: req.body.surname, relationship: req.body.relationship, country: req.body.country, previousDiagnosis: req.body.previousDiagnosis, group: req.body.group, consentgroup: req.body.consentgroup }, {new: true}, async (err,patientUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
 		var id = patientUpdated._id.toString();
 		var idencrypt= crypt.encrypt(id);
-		var patientInfo = {sub:idencrypt, patientName: patientUpdated.patientName, surname: patientUpdated.surname, birthDate: patientUpdated.birthDate, gender: patientUpdated.gender, country: patientUpdated.country, previousDiagnosis: patientUpdated.previousDiagnosis, avatar: patientUpdated.avatar, group: patientUpdated.group, consentgroup: patientUpdated.consentgroup};
+		var patientInfo = {sub:idencrypt, patientName: patientUpdated.patientName, surname: patientUpdated.surname, birthDate: patientUpdated.birthDate, gender: patientUpdated.gender, country: patientUpdated.country, previousDiagnosis: patientUpdated.previousDiagnosis, group: patientUpdated.group, consentgroup: patientUpdated.consentgroup};
 		
-		if(req.body.group==patientUpdated.group){
-			notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
-		}else{
-			notifyGroup(patientUpdated.group, 'New', patientUpdated.createdBy);
-		}
+		//notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
+		//notifySalesforce
+			User.findById(patientUpdated.createdBy, (err, user) => {
+				if (err) return res.status(500).send({message: `Error deleting the case: ${err}`})
+				if(user){
+					serviceSalesForce.getToken()
+						.then(response => {
+							console.log(response.instance_url)
+							var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+							var data  = serviceSalesForce.setCaseData(url, user, patientUpdated, "Paciente");
+
+							console.log(JSON.stringify(data));
+
+							serviceSalesForce.composite(response.access_token, response.instance_url, data)
+							.then(response2 => {
+								var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
+								Patient.findByIdAndUpdate(patientUpdated._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+									if (err){
+										console.log(`Error updating the patient: ${err}`);
+									}
+									if(eventdbStored){
+										console.log('Event updated sales ID');
+									}
+								})
+							})
+							.catch(response2 => {
+								console.log(response2)
+							})
+						})
+						.catch(response => {
+							console.log(response)
+						})
+				}else{
+					console.log('cant noti notifySalesforce');
+				}
+			})
 		
 		res.status(200).send({message: 'Patient updated', patientInfo})
 
@@ -283,15 +304,46 @@ function getStatus (req, res){
 	})
 }
 
+/**
+ * @api {put} https://virtualhubukraine.azurewebsites.net/api/patient/status/:patientId Update Status
+ * @apiName updatePatientStatus
+ * @apiDescription This method allows to change the data of a patient.
+ * @apiGroup Patients
+ * @apiVersion 1.0.0
+ * @apiExample {js} Example usage:
+ *   var data = {status: 'ontheway'};
+ *   this.http.put('https://virtualhubukraine.azurewebsites.net/api/patient/status/'+patientId, data)
+ *    .subscribe( (res : any) => {
+ *      console.log('Message: '+ res.message);
+ *     }, (err) => {
+ *      ...
+ *     }
+ *
+ * @apiHeader {String} authorization Users unique access-key. For this, go to  [Get token](#api-Access_token-signIn)
+ * @apiHeaderExample {json} Header-Example:
+ *     {
+ *       "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciPgDIUzI1NiJ9.eyJzdWIiOiI1M2ZlYWQ3YjY1YjM0ZTQ0MGE4YzRhNmUyMzVhNDFjNjEyOThiMWZjYTZjMjXkZTUxMTA9OGVkN2NlODMxYWY3IiwiaWF0IjoxNTIwMzUzMDMwLCJlcHAiOjE1NTE4ODkwMzAsInJvbGUiOiJVc2VyIiwiZ3JvdDEiOiJEdWNoZW5uZSBQYXJlbnQgUHJfrmVjdCBOZXRoZXJsYW5kcyJ9.MloW8eeJ857FY7-vwxJaMDajFmmVStGDcnfHfGJx05k"
+ *     }
+ * @apiParam {String} patientId Patient unique ID. More info here:  [Get patientId](#api-Patients-getPatientsUser)
+ * @apiParam (body) {string="new","contacted","pending","ontheway","contactlost","helped"} status Status of the Patient.
+ * @apiSuccess {String} message If the patient has been updated  correctly, it returns the message 'Updated'.
+ * @apiSuccessExample Success-Response:
+ * HTTP/1.1 200 OK
+ * {
+ * "message": "Updated"
+ * }
+ *
+ */
+
 function setStatus (req, res){
 	let patientId= crypt.decrypt(req.params.patientId);
-	serviceEmail.sendMailChangeStatus(req.body.email, req.body.userName, req.body.lang, req.body.group, req.body.statusInfo, req.body.groupEmail)
+	/*serviceEmail.sendMailChangeStatus(req.body.email, req.body.userName, req.body.lang, req.body.group, req.body.statusInfo, req.body.groupEmail)
 					.then(response => {
 						console.log('Email sent' )
 					})
 					.catch(response => {
 						console.log('Fail sending email' )
-					})
+					})*/
 	Patient.findByIdAndUpdate(patientId, { status: req.body.status }, {new: true}, (err,patientUpdated) => {
 		if(patientUpdated){
 			return res.status(200).send({message: 'Updated'})
@@ -354,9 +406,81 @@ function saveDrugs (req, res){
 
 	Patient.findByIdAndUpdate(patientId, { drugs: req.body.drugs }, { new: true}, (err,patientUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-			notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
-			res.status(200).send({message: 'drugs changed'})
+			//notifyGroup(patientUpdated.group, 'Update', patientUpdated.createdBy);
+			//notifySalesforce
+			var id = patientUpdated._id.toString();
+			var idencrypt = crypt.encrypt(id);
+			User.findById(patientUpdated.createdBy, (err, user) => {
+				if (err) return res.status(500).send({message: `Error deleting the case: ${err}`})
+				if(user){
+					serviceSalesForce.getToken()
+						.then(response => {
+							var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+							var data  = serviceSalesForce.setCaseData(url, user, patientUpdated, "Paciente");
+							serviceSalesForce.composite(response.access_token, response.instance_url, data)
+							.then(response2 => {
+								if(response2.graphs[0].isSuccessful){
+									var countDrugs = 0;
+									var hasCase = false;
+									for(let i = 0; i < response2.graphs[0].graphResponse.compositeResponse.length; i++){
+										if(response2.graphs[0].graphResponse.compositeResponse[i].referenceId=='newCase'){
+											var valueId = response2.graphs[0].graphResponse.compositeResponse[i].body.id;
+											patientUpdated.salesforceId = valueId;
+											hasCase = true;
+										}else if(response2.graphs[0].graphResponse.compositeResponse[i].referenceId.indexOf('newFarmacos')!=-1){
+											var valueId = response2.graphs[0].graphResponse.compositeResponse[i].body.id;
+											patientUpdated.drugs[countDrugs].salesforceId = valueId;
+											countDrugs++;
+										}
+									}
+									if(countDrugs>0){
+										updateSalesforceIdDrug(patientUpdated);
+									}
+									if(hasCase){
+										updateSalesforceIdRequest(patientUpdated);
+									}
+								}
+								res.status(200).send({message: 'drugs changed', patientUpdated: patientUpdated})
+							})
+							.catch(response2 => {
+								console.log(response2)
+								res.status(200).send({message: 'cant noti notifySalesforce', patientUpdated: patientUpdated})
+							})
+						})
+						.catch(response => {
+							console.log(response)
+							res.status(200).send({message: 'cant noti notifySalesforce', patientUpdated: patientUpdated})
+						})
+				}else{
+					console.log('cant noti notifySalesforce');
+					res.status(200).send({message: 'cant noti notifySalesforce', patientUpdated: patientUpdated})
+				}
+			})
+			//debería devolver cuando tengo los ids de sales forces
+			//res.status(200).send({message: 'drugs changed'})
 
+	})
+}
+
+function updateSalesforceIdRequest(eventdbUpdated){
+	Patient.findByIdAndUpdate(eventdbUpdated._id, { salesforceId: eventdbUpdated.salesforceId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+		if (err){
+			console.log(`Error updating the patient: ${err}`);
+		}
+		if(eventdbStored){
+			console.log('Event updated sales ID');
+		}
+	})
+}
+
+function updateSalesforceIdDrug(patientUpdated){
+	Patient.findByIdAndUpdate(patientUpdated._id, { drugs: patientUpdated.drugs }, { new: true}, (err,eventdbStored) => {
+		if (err){
+			console.log(`Error updating the patient: ${err}`);
+		}
+		if(eventdbStored){
+			console.log('Event updated sales ID');
+		}
 	})
 }
 
@@ -386,6 +510,35 @@ function notifyGroup(groupid, state, userId){
       })
 }
 
+function deleteDrug(req, res){
+	console.log('--------------_id, drugs---------------------');
+	let patientId= crypt.decrypt(req.params.patientId);
+	var drugs = req.body.drugs
+	//notifySalesforce
+	var salesforceId = drugs[req.body.index].salesforceId;
+	drugs.splice(req.body.index, 1);
+	console.log(salesforceId);
+	serviceSalesForce.getToken()
+	.then(response => {
+		console.log(response.instance_url)
+		 serviceSalesForce.deleteSF(response.access_token, response.instance_url, 'VH_Farmacos__c', salesforceId)
+		.then(response2 => {
+			console.log(response2)
+		})
+		.catch(response2 => {
+			console.log(response2)
+		})
+	})
+	.catch(response => {
+		console.log(response)
+	})
+
+	Patient.findByIdAndUpdate(patientId, { drugs: drugs }, { new: true}, (err,eventdbStored) => {
+		if (err) return res.status(500).send({message: `Error deleting the drug: ${err}`})
+		res.status(200).send({message: `The drug has been deleted`})
+	})
+}
+
 module.exports = {
 	getPatientsUser,
 	getPatient,
@@ -397,5 +550,6 @@ module.exports = {
 	getConsentGroup,
 	setChecks,
 	getChecks,
-	saveDrugs
+	saveDrugs,
+	deleteDrug
 }

@@ -14,6 +14,14 @@ const checksSchema = Schema({
 	check4: {type: Boolean, default: false}
 })
 
+const drugsSchema = Schema({
+	strength: String,
+	link: String,
+	dose: Number,
+	name: String,
+	salesforceId: String,
+})
+
 const PatientSchema = Schema({
 	patientName: String,
 	surname: String,
@@ -34,24 +42,23 @@ const PatientSchema = Schema({
 	createdBy: { type: Schema.Types.ObjectId, ref: "User"},
 	death: Date,
 	notes: {type: String, default: ''},
-	needsOther: {type: String, default: ''},
 	sharing: {type: Object, default: []},
 	status: {type: String, default: null},
 	lastAccess: {type: Date, default: Date.now},
 	creationDate: {type: Date, default: Date.now},
 	previousDiagnosis: {type: String, default: null},
-	avatar: String,
+	referralCenter: {type: String, default: null},
+	needAssistance: {type: String, default: null},
 	group: { type: String, default: null},
-	othergroup: {type: String, default: null},
 	consentgroup: {type: Boolean, default: false},
+	salesforceId: {type: String, default: null},
 	checks: {type: checksSchema, default: {
 		check1: false,
 		check2: false,
 		check3: false,
 		check4: false
 	}},
-	needShelter: {type: Boolean, default: false},
-	drugs: {type: Object, default: []}
+	drugs: [drugsSchema]
 })
 
 module.exports = conndbaccounts.model('Patient',PatientSchema)

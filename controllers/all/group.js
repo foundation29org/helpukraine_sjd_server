@@ -11,13 +11,13 @@ const serviceEmail = require('../../services/email')
 const sha512 = require('js-sha512')
 
 /**
- * @api {get} https://health29.org/api/groupsnames/ Get groups names
+ * @api {get} https://virtualhubukraine.azurewebsites.net/api/groupsnames/ Get groups names
  * @apiName getGroupsNames
  * @apiDescription This method return the groups of health29. you get a list of groups, and for each one you have the name.
  * @apiGroup Groups
  * @apiVersion 1.0.0
  * @apiExample {js} Example usage:
- *   this.http.get('https://health29.org/api/groupsnames)
+ *   this.http.get('https://virtualhubukraine.azurewebsites.net/api/groupsnames)
  *    .subscribe( (res : any) => {
  *      console.log('groups: '+ res.groups);
  *     }, (err) => {
@@ -57,13 +57,13 @@ function getGroupsNames (req, res){
 }
 
 /**
- * @api {get} https://health29.org/api/groups/ Get groups
+ * @api {get} https://virtualhubukraine.azurewebsites.net/api/groups/ Get groups
  * @apiName getGroups
  * @apiDescription This method return the groups of health29. you get a list of groups, and for each one you have: name, and the symptoms associated with the group.
  * @apiGroup Groups
  * @apiVersion 1.0.0
  * @apiExample {js} Example usage:
- *   this.http.get('https://health29.org/api/groups)
+ *   this.http.get('https://virtualhubukraine.azurewebsites.net/api/groups)
  *    .subscribe( (res : any) => {
  *      console.log('groups: '+ res.groups);
  *     }, (err) => {
@@ -107,14 +107,14 @@ function getGroups (req, res){
 
 
 /**
- * @api {get} https://health29.org/api/groupadmin/ Get administrator email
+ * @api {get} https://virtualhubukraine.azurewebsites.net/api/groupadmin/ Get administrator email
  * @apiName getGroupAdmin
  * @apiDescription This method return the email of the administrator of the group.
  * @apiGroup Groups
  * @apiVersion 1.0.0
  * @apiExample {js} Example usage:
  *   var groupName = <groupName>
- *   this.http.get('https://health29.org/api/groupadmin/'+groupName)
+ *   this.http.get('https://virtualhubukraine.azurewebsites.net/api/groupadmin/'+groupName)
  *    .subscribe( (res : any) => {
  *      console.log('Get the email of the administrator of the group ok');
  *     }, (err) => {
@@ -147,14 +147,14 @@ function getGroupAdmin (req, res){
 }
 
 /**
- * @api {get} https://health29.org/api/group/ Get specific group information
+ * @api {get} https://virtualhubukraine.azurewebsites.net/api/group/ Get specific group information
  * @apiName getGroup
  * @apiDescription This method return the information of one group of health29.
  * @apiGroup Groups
  * @apiVersion 1.0.0
  * @apiExample {js} Example usage:
  *   var groupName = "GroupName"
- *   this.http.get('https://health29.org/api/group/'+groupName)
+ *   this.http.get('https://virtualhubukraine.azurewebsites.net/api/group/'+groupName)
  *    .subscribe( (res : any) => {
  *      console.log('result Ok');
  *     }, (err) => {

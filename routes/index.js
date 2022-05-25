@@ -68,6 +68,7 @@ api.get('/patient/consentgroup/:patientId', auth(roles.All), patientCtrl.getCons
 api.put('/patient/checks/:patientId', auth(roles.All), patientCtrl.setChecks)
 api.get('/patient/checks/:patientId', auth(roles.All), patientCtrl.getChecks)
 api.put('/patient/drugs/:patientId', auth(roles.All), patientCtrl.saveDrugs)
+api.post('/patient/deletedrug/:patientId', auth(roles.All), patientCtrl.deleteDrug)
 
 
 //superadmin routes, using the controllers of folder Admin, this controller has methods
@@ -124,6 +125,7 @@ api.post('/openraito/patient/individualshare/:patientId', auth(roles.OnlyUser), 
 
 
 api.get('/admin/users/:groupName', auth(roles.Readers), admninUsersCtrl.getUsers)
+api.get('/admin/allusers', auth(roles.Readers), admninUsersCtrl.getAllUsers)
 api.put('/admin/patients/:patientId', auth(roles.Admin), admninUsersCtrl.setDeadPatient)
 api.put('/admin/users/subgroup/:userId', auth(roles.Admin), admninUsersCtrl.setSubgroupUser)
 api.put('/admin/users/state/:userId', auth(roles.Admin), admninUsersCtrl.setStateUser)
@@ -133,11 +135,12 @@ api.get('/admin/requestclin/:groupName', auth(roles.Admin), requestCliCtrl.getRe
 api.post('/requestclin/:userId', auth(roles.AdminClinical), requestCliCtrl.saveRequest)
 api.put('/requestclin/:requestId', auth(roles.AdminClinical), requestCliCtrl.updateRequest)
 api.delete('/requestclin/:requestId', auth(roles.AdminClinical), requestCliCtrl.deleteRequest)
-api.put('/requestclin/checks/:requestId', auth(roles.All), requestCliCtrl.setChecks)
-api.get('/requestclin/checks/:requestId', auth(roles.All), requestCliCtrl.getChecks)
+api.put('/requestclin/checks/:userId', auth(roles.All), userCtrl.setChecks)
+api.get('/requestclin/checks/:userId', auth(roles.All), userCtrl.getChecks)
 api.put('/requestclin/status/:requestId', auth(roles.AdminSuperAdmin), requestCliCtrl.setStatus)
 api.put('/requestclin/changenotes/:requestId', auth(roles.AllLessResearcher), requestCliCtrl.changenotes)
 api.get('/requestclin/group/:userId', auth(roles.AdminClinical), requestCliCtrl.getGroupRequest)
+api.post('/requestclin/deletedrug/:requestId', auth(roles.AdminClinical), requestCliCtrl.deleteDrug)
 
 /*api.get('/testToken', auth, (req, res) => {
 	res.status(200).send(true)

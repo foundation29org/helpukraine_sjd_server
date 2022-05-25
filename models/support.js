@@ -16,7 +16,7 @@ const SupportSchema = Schema({
 	statusDate: {type: Date, default: Date.now},
 	files: Object,
 	date: {type: Date, default: Date.now},
-	groupId: { type: Schema.Types.ObjectId, ref: "Group"},
+	salesforceId: {type: String, default: null},
 	createdBy: { type: Schema.Types.ObjectId, ref: "User"}
 })
 

@@ -8,6 +8,8 @@ const crypt = require('../../services/crypt')
 const User = require('../../models/user')
 const Group = require('../../models/group')
 const serviceEmail = require('../../services/email')
+const serviceSalesForce = require('../../services/salesForce')
+const config = require('../../config')
 
 function getRequests (req, res){
 	let userId= crypt.decrypt(req.params.userId);
@@ -50,11 +52,12 @@ function getRequestsAdmin (req, res){
 								var enc = false;
 								var lat = '';
 								var lng = '';
+								var country = '';
 								var status = '';
-								var needShelter = '';
+								var referralCenter = '';
+								var needAssistance = '';
 								var notes = '';
-								var needsOther = '';
-								var othergroup = '';
+								var group = '';
 								var drugs = [];
 								var idencrypt = '';
 								var idUserDecrypt = user._id.toString();
@@ -66,11 +69,12 @@ function getRequestsAdmin (req, res){
 										console.log(temppatients[j].lat);
 										lat = temppatients[j].lat
 										lng = temppatients[j].lng
+										country = temppatients[j].country
 										status = temppatients[j].status
-										othergroup = temppatients[j].othergroup
-										needShelter = temppatients[j].needShelter
+										group = temppatients[j].group
+										referralCenter = temppatients[j].referralCenter
+										needAssistance = temppatients[j].needAssistance
 										notes = temppatients[j].notes
-										needsOther = temppatients[j].needsOther
 										drugs = temppatients[j].drugs
 										var idPatientrDecrypt = temppatients[j]._id.toString();
 										var idencrypt= crypt.encrypt(idPatientrDecrypt);
@@ -78,7 +82,7 @@ function getRequestsAdmin (req, res){
 									}
 								}
 								var userName = user.userName+' '+user.lastName;
-								listPatients.push({userId: userId, userName: userName, email: user.email, lang: user.lang,phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, lat: lat, lng: lng, status: status, othergroup: othergroup, needShelter: needShelter, notes: notes, needsOther: needsOther, drugs: drugs, subgroup: user.subgroup});
+								listPatients.push({userId: userId, userName: userName, email: user.email, lang: user.lang,phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, lat: lat, lng: lng, country: country, status: status, group: group, notes: notes, drugs: drugs, subgroup: user.subgroup, referralCenter: referralCenter, needAssistance: needAssistance});
 								patientsAddded++;
 						}else{
 							listPatients.push({});
@@ -109,12 +113,13 @@ function saveRequest (req, res){
 	let eventdb = new RequestClin()
 	eventdb.lat = req.body.lat
 	eventdb.lng = req.body.lng
+	eventdb.country = req.body.country
 	eventdb.notes = req.body.notes
-	eventdb.needsOther = req.body.needsOther
+	eventdb.referralCenter = req.body.referralCenter
+	eventdb.needAssistance = req.body.needAssistance
 	eventdb.status = req.body.status
 	eventdb.updateDate = req.body.updateDate
 	eventdb.group = req.body.group
-	eventdb.othergroup = req.body.othergroup
 	eventdb.drugs = req.body.drugs
 	eventdb.createdBy = userId
 
@@ -124,8 +129,83 @@ function saveRequest (req, res){
 			res.status(500).send({message: `Failed to save in the database: ${err} `})
 		}
 		if(eventdbStored){
-			notifyGroup(eventdb.group, 'New', userId);
-			res.status(200).send({message: 'Eventdb created'});
+			//notifyGroup(eventdb.group, 'New', userId);
+			//notifySalesforce
+			var id = eventdbStored._id.toString();
+			var idencrypt = crypt.encrypt(id);
+			User.findById(userId, (err, user) => {
+				if (err) return res.status(500).send({message: `Error deleting the case: ${err}`})
+				if(user){
+					serviceSalesForce.getToken()
+						.then(response => {
+							var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+							var data  = serviceSalesForce.setCaseData(url, user, eventdbStored, "Profesional-Organizacion");
+
+							serviceSalesForce.composite(response.access_token, response.instance_url, data)
+							.then(response2 => {
+								if(response2.graphs[0].isSuccessful){
+									var countDrugs = 0;
+									var hasCase = false;
+									for(let i = 0; i < response2.graphs[0].graphResponse.compositeResponse.length; i++){
+										if(response2.graphs[0].graphResponse.compositeResponse[i].referenceId=='newCase'){
+											var valueId = response2.graphs[0].graphResponse.compositeResponse[i].body.id;
+											eventdbStored.salesforceId = valueId;
+											hasCase = true;
+										}else if(response2.graphs[0].graphResponse.compositeResponse[i].referenceId.indexOf('newFarmacos')!=-1){
+											var valueId = response2.graphs[0].graphResponse.compositeResponse[i].body.id;
+											console.log(valueId);
+											eventdbStored.drugs[countDrugs].salesforceId = valueId;
+											countDrugs++;
+										}
+									}
+									if(countDrugs>0){
+										updateSalesforceIdDrug(eventdbStored);
+									}
+									if(hasCase){
+										updateSalesforceIdRequest(eventdbStored);
+									}
+								}
+								res.status(200).send({message: 'Request created', eventdbStored: eventdbStored})
+							})
+							.catch(response2 => {
+								console.log(response2)
+								res.status(200).send({message: 'cant noti notifySalesforce', eventdbUpdated: eventdbUpdated})
+							})
+						})
+						.catch(response => {
+							console.log(response)
+							res.status(200).send({message: 'cant noti notifySalesforce', eventdbUpdated: eventdbUpdated})
+						})
+				}else{
+					console.log('cant noti notifySalesforce');
+					res.status(200).send({message: 'cant noti notifySalesforce', eventdbUpdated: eventdbUpdated})
+				}
+			})
+
+			//res.status(200).send({message: 'Eventdb created'});
+		}
+	})
+}
+
+function updateSalesforceIdRequest(eventdbUpdated){
+	console.log(eventdbUpdated);
+	RequestClin.findByIdAndUpdate(eventdbUpdated._id, { salesforceId: eventdbUpdated.salesforceId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+		if (err){
+			console.log(`Error updating the patient: ${err}`);
+		}
+		if(eventdbStored){
+			console.log('Event updated sales ID');
+		}
+	})
+}
+
+function updateSalesforceIdDrug(eventdb){
+	RequestClin.findByIdAndUpdate(eventdb._id, { drugs: eventdb.drugs }, { new: true}, (err,eventdbStored) => {
+		if (err){
+			console.log(`Error updating the patient: ${err}`);
+		}
+		if(eventdbStored){
+			console.log('Event updated sales ID');
 		}
 	})
 }
@@ -136,8 +216,60 @@ function updateRequest (req, res){
 	update.updateDate = Date.now();
 	RequestClin.findByIdAndUpdate(requestId, update, { new: true}, (err,eventdbUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-		notifyGroup(eventdbUpdated.group, 'Update', eventdbUpdated.createdBy);
-		res.status(200).send({message: 'Request updated'})
+		//notifyGroup(eventdbUpdated.group, 'Update', eventdbUpdated.createdBy);
+		//notifySalesforce
+
+			var id = eventdbUpdated._id.toString();
+			var idencrypt = crypt.encrypt(id);
+			User.findById(eventdbUpdated.createdBy, (err, user) => {
+				if (err) return res.status(500).send({message: `Error deleting the case: ${err}`})
+				if(user){
+					serviceSalesForce.getToken()
+						.then(response => {
+							console.log(response.instance_url)
+							var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+							var data  = serviceSalesForce.setCaseData(url, user, eventdbUpdated, "Profesional-Organizacion");
+							serviceSalesForce.composite(response.access_token, response.instance_url, data)
+							.then(response2 => {
+								if(response2.graphs[0].isSuccessful){
+									var countDrugs = 0;
+									var hasCase = false;
+									for(let i = 0; i < response2.graphs[0].graphResponse.compositeResponse.length; i++){
+										if(response2.graphs[0].graphResponse.compositeResponse[i].referenceId=='newCase'){
+											var valueId = response2.graphs[0].graphResponse.compositeResponse[i].body.id;
+											eventdbUpdated.salesforceId = valueId;
+											hasCase = true;
+										}else if(response2.graphs[0].graphResponse.compositeResponse[i].referenceId.indexOf('newFarmacos')!=-1){
+											var valueId = response2.graphs[0].graphResponse.compositeResponse[i].body.id;
+											eventdbUpdated.drugs[countDrugs].salesforceId = valueId;
+											countDrugs++;
+										}
+									}
+									if(countDrugs>0){
+										updateSalesforceIdDrug(eventdbUpdated);
+									}
+									if(hasCase){
+										updateSalesforceIdRequest(eventdbUpdated);
+									}
+									
+								}
+								res.status(200).send({message: 'Request updated', eventdbUpdated: eventdbUpdated})
+							})
+							.catch(response2 => {
+								console.log(response2)
+								res.status(200).send({message: 'cant noti notifySalesforce', eventdbUpdated: eventdbUpdated})
+							})
+						})
+						.catch(response => {
+							console.log(response)
+							res.status(200).send({message: 'cant noti notifySalesforce', eventdbUpdated: eventdbUpdated})
+						})
+				}else{
+					res.status(200).send({message: 'cant noti notifySalesforce', eventdbUpdated: eventdbUpdated})
+				}
+			})
+			//debería devolver cuando tengo los ids de sales forces
+		//res.status(200).send({message: 'Request updated'})
 
 	})
 }
@@ -175,6 +307,24 @@ function deleteRequest (req, res){
 	RequestClin.findById(requestId, (err, eventdb) => {
 		if (err) return res.status(500).send({message: `Error deleting the request: ${err}`})
 		if (eventdb){
+			//notifySalesforce
+			var salesforceId = eventdb.salesforceId;
+			console.log(salesforceId);
+			serviceSalesForce.getToken()
+			.then(response => {
+				console.log(response.instance_url)
+				 serviceSalesForce.deleteSF(response.access_token, response.instance_url, 'Case', salesforceId)
+				.then(response2 => {
+					console.log(response2)
+				})
+				.catch(response2 => {
+					console.log(response2)
+				})
+			})
+			.catch(response => {
+				console.log(response)
+			})
+
 			eventdb.remove(err => {
 				if(err) return res.status(500).send({message: `Error deleting the request: ${err}`})
 				res.status(200).send({message: `The request has been deleted`})
@@ -186,38 +336,47 @@ function deleteRequest (req, res){
 	})
 }
 
-function setChecks (req, res){
 
-	let requestId= req.params.requestId;
-
-	RequestClin.findByIdAndUpdate(requestId, { checks: req.body.checks }, {select: '-createdBy', new: true}, (err,patientUpdated) => {
-		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-
-			res.status(200).send({message: 'checks changed'})
-
-	})
-}
-
-function getChecks (req, res){
-
-	let requestId= req.params.requestId;
-
-	RequestClin.findById(requestId, {"_id" : false , "createdBy" : false }, (err,patient) => {
-		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-			res.status(200).send({checks: patient.checks})
-
-	})
-}
+/**
+ * @api {put} https://virtualhubukraine.azurewebsites.net/api/requestclin/status/:requestId Update Status
+ * @apiName updateclinicianStatus
+ * @apiDescription This method allows to change the data of a clinician case.
+ * @apiGroup Clinicals
+ * @apiVersion 1.0.0
+ * @apiExample {js} Example usage:
+ *   var data = {status: 'ontheway'};
+ *   this.http.put('https://virtualhubukraine.azurewebsites.net/api/requestclin/status/'+requestId, data)
+ *    .subscribe( (res : any) => {
+ *      console.log('Message: '+ res.message);
+ *     }, (err) => {
+ *      ...
+ *     }
+ *
+ * @apiHeader {String} authorization Users unique access-key. For this, go to  [Get token](#api-Access_token-signIn)
+ * @apiHeaderExample {json} Header-Example:
+ *     {
+ *       "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciPgDIUzI1NiJ9.eyJzdWIiOiI1M2ZlYWQ3YjY1YjM0ZTQ0MGE4YzRhNmUyMzVhNDFjNjEyOThiMWZjYTZjMjXkZTUxMTA9OGVkN2NlODMxYWY3IiwiaWF0IjoxNTIwMzUzMDMwLCJlcHAiOjE1NTE4ODkwMzAsInJvbGUiOiJVc2VyIiwiZ3JvdDEiOiJEdWNoZW5uZSBQYXJlbnQgUHJfrmVjdCBOZXRoZXJsYW5kcyJ9.MloW8eeJ857FY7-vwxJaMDajFmmVStGDcnfHfGJx05k"
+ *     }
+ * @apiParam {String} requestId Case unique ID
+ * @apiParam (body) {string="new","contacted","pending","ontheway","contactlost","helped"} status Status of the case.
+ * @apiSuccess {String} message If the case has been updated  correctly, it returns the message 'Updated'.
+ * @apiSuccessExample Success-Response:
+ * HTTP/1.1 200 OK
+ * {
+ * "message": "Updated"
+ * }
+ *
+ */
 
 function setStatus (req, res){
 	let requestId= crypt.decrypt(req.params.requestId);
-	serviceEmail.sendMailChangeStatus(req.body.email, req.body.userName, req.body.lang, req.body.group, req.body.statusInfo, req.body.groupEmail)
+	/*serviceEmail.sendMailChangeStatus(req.body.email, req.body.userName, req.body.lang, req.body.group, req.body.statusInfo, req.body.groupEmail)
 					.then(response => {
 						console.log('Email sent' )
 					})
 					.catch(response => {
 						console.log('Fail sending email' )
-					})
+					})*/
 
 	RequestClin.findByIdAndUpdate(requestId, { status: req.body.status }, {new: true}, (err,patientUpdated) => {
 		if(patientUpdated){
@@ -255,15 +414,44 @@ function getGroupRequest (req, res){
 }
 
 
+function deleteDrug(req, res){
+	console.log('--------------_id, drugs---------------------');
+	let requestId= req.params.requestId;
+	var drugs = req.body.drugs
+	//notifySalesforce
+	var salesforceId = drugs[req.body.index].salesforceId;
+	drugs.splice(req.body.index, 1);
+	console.log(salesforceId);
+	serviceSalesForce.getToken()
+	.then(response => {
+		console.log(response.instance_url)
+		 serviceSalesForce.deleteSF(response.access_token, response.instance_url, 'VH_Farmacos__c', salesforceId)
+		.then(response2 => {
+			console.log(response2)
+		})
+		.catch(response2 => {
+			console.log(response2)
+		})
+	})
+	.catch(response => {
+		console.log(response)
+	})
+
+	RequestClin.findByIdAndUpdate(requestId, { drugs: drugs }, { new: true}, (err,eventdbStored) => {
+		if (err) return res.status(500).send({message: `Error deleting the drug: ${err}`})
+		res.status(200).send({message: `The drug has been deleted`})
+	})
+}
+
+
 module.exports = {
 	getRequests,
 	getRequestsAdmin,
 	saveRequest,
 	updateRequest,
 	deleteRequest,
-	setChecks,
-	getChecks,
 	setStatus,
 	changenotes,
-	getGroupRequest
+	getGroupRequest,
+	deleteDrug
 }

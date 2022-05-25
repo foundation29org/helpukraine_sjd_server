@@ -11,7 +11,7 @@ const crypt = require('../../services/crypt')
 
 
 /**
- * @api {get} https://health29.org/api/admin/users/ Request list of users of the group.
+ * @api {get} https://virtualhubukraine.azurewebsites.net/api/admin/users/ Request list of users of the group.
  * @apiName getUsers
  * @apiPrivate
  * @apiDescription This method request the list of users of the group.
@@ -19,7 +19,7 @@ const crypt = require('../../services/crypt')
  * @apiVersion 1.0.0
  * @apiExample {js} Example usage:
  *   var param = <group_name>
- *   this.http.get('https://health29.org/api/admin/users/'+param)
+ *   this.http.get('https://virtualhubukraine.azurewebsites.net/api/admin/users/'+param)
  *    .subscribe( (res : any) => {
  *      console.log('Get list of the users of the group ok');
  *     }, (err) => {
@@ -96,6 +96,48 @@ function getRequestClin(group) {
 	});
 }
 
+
+async function getAllUsers(req, res) {
+	try {
+		var patients = await getAllPatients();
+		var requestClin = await getAllRequestClin();
+		var data = await getInfoUsers(patients, requestClin);
+		return res.status(200).send(data)
+	} catch (e) {
+		console.error("Error: ", e);
+	}
+}
+
+function getAllPatients() {
+	return new Promise(resolve => {
+		var listPatients = [];
+		Patient.find({},(err, patients) => {
+			if (patients) {
+				patients.forEach(patient => {
+					patient.role = 'User'
+					listPatients.push(patient);
+				});
+			}
+			resolve(listPatients);
+		});
+	});
+}
+
+function getAllRequestClin() {
+	return new Promise(resolve => {
+		var listPatients = [];
+		RequestClin.find({},(err, patients) => {
+			if (patients) {
+				patients.forEach(patient => {
+					patient.role = 'Clinical'
+					listPatients.push(patient);
+				});
+			}
+			resolve(listPatients);
+		});
+	});
+}
+
 async function getInfoUsers(patients, requestClin) {
 	return new Promise(async function (resolve, reject) {
 		var promises = [];
@@ -140,7 +182,7 @@ async function getInfoUser(patient) {
 				})
 					
 			}
-			var resp = {userId: userId, userName: userName, email: user.email, lang: user.lang, phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, birthDate: patient.birthDate, lat: patient.lat, lng: patient.lng, status: patient.status, othergroup: patient.othergroup, needShelter: patient.needShelter, notes: patient.notes, needsOther: patient.needsOther, drugs: patient.drugs, subgroup: user.subgroup, role: patient.role, msgs: msgs, unread: unread}
+			var resp = {userId: userId, userName: userName, email: user.email, lang: user.lang, phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, birthDate: patient.birthDate, lat: patient.lat, lng: patient.lng, status: patient.status, group: patient.group, notes: patient.notes, drugs: patient.drugs, subgroup: user.subgroup, role: patient.role, msgs: msgs, unread: unread, creationDate: patient.creationDate, referralCenter: patient.referralCenter, needAssistance: patient.needAssistance, country: patient.country}
 			resolve(resp);
 		})
 	});
@@ -165,86 +207,8 @@ function getsMsg(userId) {
 	});
 }
 
-function getUsers2 (req, res){
-	let group = req.params.groupName;
-	console.log(group);
-	Patient.find({group: group},(err, patients) => {
-		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-		console.log(patients);
-		var temppatients = patients;
-		var totalPatients = 0;
-		var patientsAddded = 0;
-		var countpos = 0;
-		var listPatients = [];
-		if(!patients){
-			res.status(200).send(listPatients)
-		}else{
-			if(patients.length==0){
-				res.status(200).send(listPatients)
-			}else{
-				for(var i = 0; i < patients.length; i++) {
-					User.findOne({"_id": patients[i].createdBy},(err, user) => {
-						countpos++;
-						if(user){
-							totalPatients = totalPatients + 1;
-								
-								var enc = false;
-								var birthDate = '';
-								var lat = '';
-								var lng = '';
-								var status = '';
-								var needShelter = '';
-								var notes = '';
-								var needsOther = '';
-								var othergroup = '';
-								var drugs = [];
-								var idencrypt = '';
-								var idUserDecrypt = user._id.toString();
-								var userId = crypt.encrypt(idUserDecrypt);
-								for(var j = 0; j < temppatients.length && !enc; j++) {
-									if((temppatients[j].createdBy).toString() === (user._id).toString()){
-										birthDate = temppatients[j].birthDate
-										lat = temppatients[j].lat
-										lng = temppatients[j].lng
-										status = temppatients[j].status
-										othergroup = temppatients[j].othergroup
-										needShelter = temppatients[j].needShelter
-										notes = temppatients[j].notes
-										needsOther = temppatients[j].needsOther
-										drugs = temppatients[j].drugs
-										var idPatientrDecrypt = temppatients[j]._id.toString();
-										var idencrypt= crypt.encrypt(idPatientrDecrypt);
-										enc = true;
-									}
-								}
-								var userName = user.userName+' '+user.lastName;
-								listPatients.push({userId: userId, userName: userName, email: user.email, lang: user.lang, phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, birthDate: birthDate, lat: lat, lng: lng, status: status, othergroup: othergroup, needShelter: needShelter, notes: notes, needsOther: needsOther, drugs: drugs, subgroup: user.subgroup});
-								patientsAddded++;
-						}else{
-							listPatients.push({});
-						}
-						if(patientsAddded==totalPatients && countpos==patients.length){
-							var result = [];
-							for(var j = 0; j < listPatients.length; j++) {
-								if(listPatients[j].patientId!=undefined){
-									result.push(listPatients[j]);
-								}
-							}
-							res.status(200).send(result)
-						}
-					})
-				}
-			}
-		}
-
-
-
-	})
-
-}
-
 /**
- * @api {post} https://health29.org/api/admin/patients/ Set patient dead
+ * @api {post} https://virtualhubukraine.azurewebsites.net/api/admin/patients/ Set patient dead
  * @apiPrivate
  * @apiName setDeadPatient
  * @apiDescription This method set the value of dead for a patient.
@@ -253,7 +217,7 @@ function getUsers2 (req, res){
  * @apiExample {js} Example usage:
  *   var patientId = <patientId>
  *   var body = {death: <death_value>}
- *   this.http.post('https://health29.org/api/admin/patients/'+patientId,body)
+ *   this.http.post('https://virtualhubukraine.azurewebsites.net/api/admin/patients/'+patientId,body)
  *    .subscribe( (res : any) => {
  *      console.log('Set value of dead for patient ok');
  *     }, (err) => {
@@ -286,7 +250,7 @@ function setDeadPatient (req, res){
 }
 
 /**
- * @api {post} https://health29.org/api/admin/users/subgroup/ Set subgroup user
+ * @api {post} https://virtualhubukraine.azurewebsites.net/api/admin/users/subgroup/ Set subgroup user
  * @apiPrivate
  * @apiName setSubgroupUser
  * @apiDescription This method set the value of subgroup for a user.
@@ -295,7 +259,7 @@ function setDeadPatient (req, res){
  * @apiExample {js} Example usage:
  *   var userId = <userId>
  *   var body = {subgroup: <subgroup_value>}
- *   this.http.post('https://health29.org/api/admin/users/subgroup/'+userId,body)
+ *   this.http.post('https://virtualhubukraine.azurewebsites.net/api/admin/users/subgroup/'+userId,body)
  *    .subscribe( (res : any) => {
  *      console.log('Set value of subgroup for user ok');
  *     }, (err) => {
@@ -328,7 +292,7 @@ function setSubgroupUser (req, res){
 }
 
 /**
- * @api {post} https://health29.org/api/admin/users/state/ Set blockedaccount state for a user
+ * @api {post} https://virtualhubukraine.azurewebsites.net/api/admin/users/state/ Set blockedaccount state for a user
  * @apiPrivate
  * @apiName setStateUser
  * @apiDescription This method set the value of blockedaccount state for a user.
@@ -337,7 +301,7 @@ function setSubgroupUser (req, res){
  * @apiExample {js} Example usage:
  *   var userId = <userId>
  *   var body = {blockedaccount: <blockedaccount_value>}
- *   this.http.post('https://health29.org/api/admin/users/state/'+userId,body)
+ *   this.http.post('https://virtualhubukraine.azurewebsites.net/api/admin/users/state/'+userId,body)
  *    .subscribe( (res : any) => {
  *      console.log('Set value of blockedaccount state for a user ok');
  *     }, (err) => {
@@ -389,6 +353,7 @@ function setStateUser (req, res){
 
 module.exports = {
 	getUsers,
+	getAllUsers,
 	setDeadPatient,
 	setSubgroupUser,
 	setStateUser

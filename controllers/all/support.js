@@ -8,6 +8,9 @@ const Support = require('../../models/support')
 const Group = require('../../models/group')
 const serviceEmail = require('../../services/email')
 const crypt = require('../../services/crypt')
+const config = require('../../config')
+const serviceSalesForce = require('../../services/salesForce')
+const Patient = require('../../models/patient')
 
 
 function sendMsgSupport(req, res){
@@ -23,37 +26,52 @@ function sendMsgSupport(req, res){
 			support.subject = req.body.subject
 			support.description = req.body.description
 			support.files = req.body.files
-			if(req.body.groupId){
-				support.groupId = req.body.groupId
-			}else{
-				support.groupId = null
-			}
 			
 			support.createdBy = userId
 
 			//guardamos los valores en BD y enviamos Email
 			support.save((err, supportStored) => {
 				if (err) return res.status(500).send({ message: 'Error saving the msg'})
-				if(req.body.groupId){
-					Group.findById(support.groupId, function (err, group) {
-						var emailTo = null;
-						if (group){
-							emailTo = group.email
-						}
-	
-					serviceEmail.sendMailSupport(user.email, user.lang, user.role, supportStored, emailTo)
-						.then(response => {
-							return res.status(200).send({ message: 'Email sent'})
+				//notifySalesforce
+
+				var id = supportStored._id.toString();
+				var idencrypt = crypt.encrypt(id);
+				serviceSalesForce.getToken()
+				.then(async response => {
+					var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/VH_ContactosWeb__c/VH_WebExternalId__c/' + idencrypt;
+					var data  = serviceSalesForce.setMsgData(url, supportStored, user.salesforceId);
+					if(user.role == 'User'){
+						var patientSalesforceId = await getPatient(userId);
+						data  = serviceSalesForce.setMsgData(url, supportStored, patientSalesforceId);
+					}
+					console.log(JSON.stringify(data));
+
+					serviceSalesForce.composite(response.access_token, response.instance_url, data)
+					.then(response2 => {
+						console.log(JSON.stringify(response2));
+						var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
+						console.log(response2.graphs[0].graphResponse.compositeResponse);
+						console.log(valueId);
+						Support.findByIdAndUpdate(supportStored._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+							if (err){
+								console.log(`Error updating the user: ${err}`);
+							}
+							if(eventdbStored){
+								console.log('User updated sales ID');
+							}
 						})
-						.catch(response => {
-							//create user, but Failed sending email.
-							//res.status(200).send({ token: serviceAuth.createToken(user),  message: 'Fail sending email'})
-							res.status(500).send({ message: 'Fail sending email'})
-						})
-					//return res.status(200).send({ token: serviceAuth.createToken(user)})
+					})
+					.catch(response2 => {
+						console.log(response2)
+					})
 				})
-				}else{
-					serviceEmail.sendMailSupport(user.email, user.lang, user.role, supportStored, null)
+				.catch(response => {
+					console.log(response)
+				})
+				return res.status(200).send({ message: 'Email sent'})
+
+				/*
+				serviceEmail.sendMailSupport(user.email, user.lang, user.role, supportStored, null)
 						.then(response => {
 							return res.status(200).send({ message: 'Email sent'})
 						})
@@ -61,14 +79,21 @@ function sendMsgSupport(req, res){
 							//create user, but Failed sending email.
 							//res.status(200).send({ token: serviceAuth.createToken(user),  message: 'Fail sending email'})
 							res.status(500).send({ message: 'Fail sending email'})
-						})
-				}
+						})*/
 				
 			})
 		}else{
 			return res.status(500).send({ message: 'user not exists'})
 		}
 	})
+}
+
+function getPatient(userId) {
+	return new Promise(resolve => {
+		Patient.findOne({"createdBy": userId}, {"createdBy" : false},(err, patient) => {
+			resolve(patient.salesforceId);
+		});
+	});
 }
 
 function sendMsgLogoutSupport(req, res){
@@ -119,7 +144,6 @@ function getUserMsgs(req, res){
 
 function getAllMsgs(req, res){
 	let userId= crypt.decrypt(req.params.userId);
-	var groupId = req.body.groupId;
 	User.findById(userId, {"_id" : false , "password" : false, "__v" : false, "confirmationCode" : false, "loginAttempts" : false, "confirmed" : false, "lastLogin" : false}, (err, user) => {
 		if (err) return res.status(500).send({message: 'Error making the request:'})
 		if(!user) return res.status(404).send({code: 208, message: 'The user does not exist'})
@@ -150,32 +174,6 @@ function getAllMsgs(req, res){
 
 			})
 
-		}else if(user.role == 'Admin'){
-			Support.find({platform: 'Relief Ukraine', groupId: groupId},(err, msgs) => {
-				if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-				var listmsgs = [];
-				if(msgs.length>0){
-					msgs.forEach(function(u) {
-						//if(u.platform=='H29' || u.platform==undefined){
-							User.findById(u.createdBy, {"_id" : false , "password" : false, "__v" : false, "confirmationCode" : false, "loginAttempts" : false, "confirmed" : false, "lastLogin" : false}, (err, user2) => {
-								if(user2){
-									listmsgs.push({ subject:u.subject, description: u.description, date: u.date, status: u.status, statusDate: u.statusDate, type: u.type, _id: u._id, files: u.files, email: user2.email, lang: user2.lang, id: u._id});
-								}else{
-									listmsgs.push({ subject:u.subject, description: u.description, date: u.date, status: u.status, statusDate: u.statusDate, type: u.type, _id: u._id, files: u.files, email: '', lang: '', id: u._id});
-
-								}
-								if(listmsgs.length == msgs.length){
-									res.status(200).send({listmsgs})
-								}
-							});
-						//}
-					});
-				}
-				else{
-					res.status(200).send({listmsgs})
-				}
-
-			});
 		}else{
 			res.status(401).send({message: 'without permission'})
 		}
