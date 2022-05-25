@@ -423,42 +423,43 @@ function signUp(req, res) {
 					var userId = userSaved._id.toString();
 					savePatient(userId, req, userSaved);
 				}
-
-				var id = userSaved._id.toString();
-				var idencrypt = crypt.encrypt(id);
-				serviceSalesForce.getToken()
-				.then(response => {
-					var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
-					var type = "Profesional-Organizacion";
-					if(req.body.role == 'User'){
-						type = "Paciente"
-					}
-					var data  = serviceSalesForce.setUserData(url, user, type);
-
-					console.log(JSON.stringify(data));
-
-					serviceSalesForce.composite(response.access_token, response.instance_url, data)
-					.then(response2 => {
-						console.log(JSON.stringify(response2));
-						var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
-						console.log(response2.graphs[0].graphResponse.compositeResponse);
-						console.log(valueId);
-						User.findByIdAndUpdate(userSaved._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
-							if (err){
-								console.log(`Error updating the user: ${err}`);
-							}
-							if(eventdbStored){
-								console.log('User updated sales ID');
-							}
-						})
+				if(req.body.role == 'Clinical'){
+					var id = userSaved._id.toString();
+					var idencrypt = crypt.encrypt(id);
+					serviceSalesForce.getToken()
+					.then(response => {
+						var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
+	
+							var type = "Profesional-Organizacion";
+							var data  = serviceSalesForce.setUserData(url, user, type);
+	
+							console.log(JSON.stringify(data));
+	
+							serviceSalesForce.composite(response.access_token, response.instance_url, data)
+							.then(response2 => {
+								console.log(JSON.stringify(response2));
+								var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
+								console.log(response2.graphs[0].graphResponse.compositeResponse);
+								console.log(valueId);
+								User.findByIdAndUpdate(userSaved._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+									if (err){
+										console.log(`Error updating the user: ${err}`);
+									}
+									if(eventdbStored){
+										console.log('User updated sales ID');
+									}
+								})
+							})
+							.catch(response2 => {
+								console.log(response2)
+							})
+						
 					})
-					.catch(response2 => {
-						console.log(response2)
+					.catch(response => {
+						console.log(response)
 					})
-				})
-				.catch(response => {
-					console.log(response)
-				})
+				}
+				
 
 
 

@@ -64,34 +64,6 @@ function composite (access_token, host, data){
   return decoded
 }
 
-function deleteSF (access_token, host, SobjectName, SobjectId){
-
-  var url = host+'/services/data/'+config.SALES_FORCE.version+'/sobjects/'+SobjectName+'/'+SobjectId;
-  var authorization = 'Bearer '+access_token;
-  var options = {
-    'method': 'Delete',
-    'url': url,
-    'headers': {
-      'Authorization': authorization,
-      'Content-Type': 'application/json'
-    }
-  };
-  
-  const decoded = new Promise((resolve, reject) => {
-    request(options, function (error, response) {
-      if (error) {
-        console.error(error)
-        resolve(error)
-      } 
-      console.log(response.statusCode)
-      console.log(response.body);
-      resolve(response.statusCode)
-
-    });
-  });
-  return decoded
-}
-
 function setCaseData(url, user, patient, type){
   console.log(patient);
 
@@ -126,7 +98,8 @@ function setCaseData(url, user, patient, type){
               "Name":"Virtual Hub Paciente - Profesional"
              },
              "Origin":"Web",
-             "IP_Web_TimeStamp__c":patient.creationDate
+             "IP_Web_TimeStamp__c":patient.creationDate,
+             "ParentId":user.salesforceId
           }
          }
         ]
@@ -202,13 +175,13 @@ function setUserData(url, user, type){
    return data;
 }
 
-function setMsgData(url, supportStored, userId){
+function setMsgData(url, supportStored, salesforceId){
   var attachments = "";
   if(supportStored.files.length>0){
     supportStored.files.forEach(function(file) {
       
       var urlpath = blobAccessToken.blobAccountUrl+'filessupport/'+file+blobAccessToken.sasToken;
-      attachments=urlpath;
+      attachments=attachments+urlpath+',';
     });
   }
 
@@ -230,7 +203,7 @@ function setMsgData(url, supportStored, userId){
             "VH_Date__c":supportStored.date,
             "VH_StatusDate__c":supportStored.statusDate,
             "VH_Status__c":supportStored.status,
-            "VH_Case__c": userId
+            "VH_Case__c": salesforceId
           }
          }
         ]
@@ -239,6 +212,34 @@ function setMsgData(url, supportStored, userId){
    };
 
    return data;
+}
+
+function deleteSF (access_token, host, SobjectName, SobjectId){
+
+  var url = host+'/services/data/'+config.SALES_FORCE.version+'/sobjects/'+SobjectName+'/'+SobjectId;
+  var authorization = 'Bearer '+access_token;
+  var options = {
+    'method': 'Delete',
+    'url': url,
+    'headers': {
+      'Authorization': authorization,
+      'Content-Type': 'application/json'
+    }
+  };
+  
+  const decoded = new Promise((resolve, reject) => {
+    request(options, function (error, response) {
+      if (error) {
+        console.error(error)
+        resolve(error)
+      } 
+      console.log(response.statusCode)
+      console.log(response.body);
+      resolve(response.statusCode)
+
+    });
+  });
+  return decoded
 }
 
 

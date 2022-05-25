@@ -10,6 +10,7 @@ const serviceEmail = require('../../services/email')
 const crypt = require('../../services/crypt')
 const config = require('../../config')
 const serviceSalesForce = require('../../services/salesForce')
+const Patient = require('../../models/patient')
 
 
 function sendMsgSupport(req, res){
@@ -36,10 +37,13 @@ function sendMsgSupport(req, res){
 				var id = supportStored._id.toString();
 				var idencrypt = crypt.encrypt(id);
 				serviceSalesForce.getToken()
-				.then(response => {
+				.then(async response => {
 					var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/VH_ContactosWeb__c/VH_WebExternalId__c/' + idencrypt;
-					var data  = serviceSalesForce.setMsgData(url, supportStored, req.body.userId);
-
+					var data  = serviceSalesForce.setMsgData(url, supportStored, user.salesforceId);
+					if(user.role == 'User'){
+						var patientSalesforceId = await getPatient(userId);
+						data  = serviceSalesForce.setMsgData(url, supportStored, patientSalesforceId);
+					}
 					console.log(JSON.stringify(data));
 
 					serviceSalesForce.composite(response.access_token, response.instance_url, data)
@@ -82,6 +86,14 @@ function sendMsgSupport(req, res){
 			return res.status(500).send({ message: 'user not exists'})
 		}
 	})
+}
+
+function getPatient(userId) {
+	return new Promise(resolve => {
+		Patient.findOne({"createdBy": userId}, {"createdBy" : false},(err, patient) => {
+			resolve(patient.salesforceId);
+		});
+	});
 }
 
 function sendMsgLogoutSupport(req, res){
