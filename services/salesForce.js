@@ -234,6 +234,33 @@ function deleteSF (access_token, host, SobjectName, SobjectId){
   return decoded
 }
 
+function getCaseNumber (access_token, host, salesforceId){
+
+  var url = host+'/services/data/'+config.SALES_FORCE.version+'/query/?q=Select+CaseNumber+From+Case+where+id+=+';
+  url = url+"'"+salesforceId+"'";
+  var authorization = 'Bearer '+access_token;
+  var options = {
+    'method': 'GET',
+    'url': url,
+    'headers': {
+      'Authorization': authorization,
+      'Content-Type': 'application/json'
+    }
+  };
+  
+  const decoded = new Promise((resolve, reject) => {
+    request(options, function (error, response) {
+      if (error) {
+        console.error(error)
+        resolve(error)
+      } 
+      resolve(JSON.parse(response.body))
+
+    });
+  });
+  return decoded
+}
+
 
 
 module.exports = {
@@ -242,5 +269,6 @@ module.exports = {
   setCaseData,
   setUserData,
   setMsgData,
-  deleteSF
+  deleteSF,
+  getCaseNumber
 }

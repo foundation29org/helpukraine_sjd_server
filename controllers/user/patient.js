@@ -241,11 +241,8 @@ function updatePatient (req, res){
 				if(user){
 					serviceSalesForce.getToken()
 						.then(response => {
-							console.log(response.instance_url)
 							var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
 							var data  = serviceSalesForce.setCaseData(url, user, patientUpdated, "Paciente");
-
-							console.log(JSON.stringify(data));
 
 							serviceSalesForce.composite(response.access_token, response.instance_url, data)
 							.then(response2 => {
@@ -480,7 +477,6 @@ function deleteDrug(req, res){
 	drugs.splice(req.body.index, 1);
 	serviceSalesForce.getToken()
 	.then(response => {
-		console.log(response.instance_url)
 		 serviceSalesForce.deleteSF(response.access_token, response.instance_url, 'VH_Farmacos__c', salesforceId)
 		.then(response2 => {
 			console.log(response2)

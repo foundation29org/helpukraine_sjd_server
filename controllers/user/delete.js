@@ -10,7 +10,6 @@ const serviceSalesForce = require('../../services/salesForce')
 const config = require('../../config')
 
 function deleteAccount (req, res){
-	console.log(req.body);
 	req.body.email = (req.body.email).toLowerCase();
 	User.getAuthenticated(req.body.email, req.body.password, function (err, user, reason) {
 		if (err) return res.status(500).send({ message: err })
@@ -43,7 +42,6 @@ function deletePatient (res, patientId, userId, user){
 			var salesforceId = patient.salesforceId;
 			serviceSalesForce.getToken()
 			.then(response => {
-				console.log(response.instance_url)
 				 serviceSalesForce.deleteSF(response.access_token, response.instance_url, 'Case', salesforceId)
 				.then(response2 => {
 					console.log(response2)
@@ -93,16 +91,13 @@ function savePatient(userId, user) {
 		var id = patientStored._id.toString();
 		var idencrypt = crypt.encrypt(id);
 		var patientInfo = { sub: idencrypt, patientName: patient.patientName, surname: patient.surname, birthDate: patient.birthDate, gender: patient.gender, country: patient.country, previousDiagnosis: patient.previousDiagnosis, consentgroup: patient.consentgroup };
-		console.log('Patient created' + patientInfo);
 		//notifySalesforce
 		serviceSalesForce.getToken()
 			.then(response => {
-				console.log(response.instance_url)
 				var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
 				var data  = serviceSalesForce.setCaseData(url, user, patient, "Paciente");
 				 serviceSalesForce.composite(response.access_token, response.instance_url, data)
 				.then(response2 => {
-					console.log(response2)
 					//set id id on DDBB
 					var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
 					Patient.findByIdAndUpdate(patientStored._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, patientUpdated) => {
