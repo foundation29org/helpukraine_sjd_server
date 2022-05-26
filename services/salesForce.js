@@ -82,7 +82,7 @@ function setCaseData(url, user, patient, type){
              "IP_WebBirthdate__c":patient.birthDate,
              "VH_Rol__c":user.iscaregiver,
              "IP_InformacionPatologia__c":null,
-             "VH_Patologia__c":user.group,
+             "VH_Patologia__c":patient.group,
              "VH_Geolocalizacion__latitude__s":patient.lat,
              "VH_Geolocalizacion__longitude__s":patient.lng,
              "VH_CentroMedicoReferencia__c":patient.referralCenter,
