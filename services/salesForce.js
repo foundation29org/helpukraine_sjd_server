@@ -82,7 +82,7 @@ function setCaseData(url, user, patient, type){
              "IP_WebBirthdate__c":patient.birthDate,
              "VH_Rol__c":user.iscaregiver,
              "IP_InformacionPatologia__c":null,
-             "VH_Patologia__c":user.group,
+             "VH_Patologia__c":patient.group,
              "VH_Geolocalizacion__latitude__s":patient.lat,
              "VH_Geolocalizacion__longitude__s":patient.lng,
              "VH_CentroMedicoReferencia__c":patient.referralCenter,
@@ -234,6 +234,33 @@ function deleteSF (access_token, host, SobjectName, SobjectId){
   return decoded
 }
 
+function getCaseNumber (access_token, host, salesforceId){
+
+  var url = host+'/services/data/'+config.SALES_FORCE.version+'/query/?q=Select+CaseNumber+From+Case+where+id+=+';
+  url = url+"'"+salesforceId+"'";
+  var authorization = 'Bearer '+access_token;
+  var options = {
+    'method': 'GET',
+    'url': url,
+    'headers': {
+      'Authorization': authorization,
+      'Content-Type': 'application/json'
+    }
+  };
+  
+  const decoded = new Promise((resolve, reject) => {
+    request(options, function (error, response) {
+      if (error) {
+        console.error(error)
+        resolve(error)
+      } 
+      resolve(JSON.parse(response.body))
+
+    });
+  });
+  return decoded
+}
+
 
 
 module.exports = {
@@ -242,5 +269,6 @@ module.exports = {
   setCaseData,
   setUserData,
   setMsgData,
-  deleteSF
+  deleteSF,
+  getCaseNumber
 }

@@ -150,7 +150,15 @@ async function getInfoUsers(patients, requestClin) {
 		await Promise.all(promises)
 			.then(async function (data) {
 				console.log('termina')
-				resolve(data)
+				var resUsers = [];
+				if(data.length>0){
+					for(var j=0;j<data.length;j++){
+						if(data[j].userName!=undefined){
+							resUsers.push(data[j]);
+						}
+					}
+				}
+				resolve(resUsers)
 			})
 			.catch(function (err) {
 				console.log('Manejar promesa rechazada (' + err + ') aquí.');
@@ -167,23 +175,28 @@ async function getInfoUser(patient) {
 				console.log(err);
 				resolve(err)
 			}
-			var idUserDecrypt = user._id.toString();
-			var userId = crypt.encrypt(idUserDecrypt);
-			var idPatientrDecrypt = patient._id.toString();
-			var idencrypt= crypt.encrypt(idPatientrDecrypt);
-			var userName = user.userName+' '+user.lastName;
-			var msgs = await getsMsg(idUserDecrypt);
-			var unread = false;
-			if(msgs.length>0){
-				msgs.forEach(function(u) {
-					if(u.status=='unread'){
-						unread = true;
-					}
-				})
-					
+			if(user){
+				var idUserDecrypt = user._id.toString();
+				var userId = crypt.encrypt(idUserDecrypt);
+				var idPatientrDecrypt = patient._id.toString();
+				var idencrypt= crypt.encrypt(idPatientrDecrypt);
+				var userName = user.userName+' '+user.lastName;
+				var msgs = await getsMsg(idUserDecrypt);
+				var unread = false;
+				if(msgs.length>0){
+					msgs.forEach(function(u) {
+						if(u.status=='unread'){
+							unread = true;
+						}
+					})
+						
+				}
+				var resp = {userId: userId, userName: userName, email: user.email, lang: user.lang, phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, birthDate: patient.birthDate, lat: patient.lat, lng: patient.lng, status: patient.status, group: patient.group, notes: patient.notes, drugs: patient.drugs, subgroup: user.subgroup, role: patient.role, msgs: msgs, unread: unread, creationDate: patient.creationDate, referralCenter: patient.referralCenter, needAssistance: patient.needAssistance, country: patient.country}
+				resolve(resp);
+			}else{
+				resolve({})
 			}
-			var resp = {userId: userId, userName: userName, email: user.email, lang: user.lang, phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, birthDate: patient.birthDate, lat: patient.lat, lng: patient.lng, status: patient.status, group: patient.group, notes: patient.notes, drugs: patient.drugs, subgroup: user.subgroup, role: patient.role, msgs: msgs, unread: unread, creationDate: patient.creationDate, referralCenter: patient.referralCenter, needAssistance: patient.needAssistance, country: patient.country}
-			resolve(resp);
+			
 		})
 	});
 }

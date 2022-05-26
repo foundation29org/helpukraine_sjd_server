@@ -24,7 +24,6 @@ function getRequests (req, res){
 
 function getRequestsAdmin (req, res){
 	let group = req.params.groupName;
-	console.log(group);
 	RequestClin.find({group: group},(err, patients) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
 		
@@ -63,8 +62,6 @@ function getRequestsAdmin (req, res){
 								for(var j = 0; j < temppatients.length && !enc; j++) {
 									if((temppatients[j].createdBy).toString() === (user._id).toString() && (!temppatients[j].found)){
 										temppatients[j].found = true;
-										console.log('coincide');
-										console.log(temppatients[j].lat);
 										lat = temppatients[j].lat
 										lng = temppatients[j].lng
 										country = temppatients[j].country
@@ -150,7 +147,6 @@ function saveRequest (req, res){
 											hasCase = true;
 										}else if(response2.graphs[0].graphResponse.compositeResponse[i].referenceId.indexOf('newFarmacos')!=-1){
 											var valueId = response2.graphs[0].graphResponse.compositeResponse[i].body.id;
-											console.log(valueId);
 											eventdbStored.drugs[countDrugs].salesforceId = valueId;
 											countDrugs++;
 										}
@@ -159,7 +155,7 @@ function saveRequest (req, res){
 										updateSalesforceIdDrug(eventdbStored);
 									}
 									if(hasCase){
-										updateSalesforceIdRequest(eventdbStored);
+										updateSalesforceIdRequest(eventdbStored, response);
 									}
 								}
 								res.status(200).send({message: 'Request created', eventdbStored: eventdbStored})
@@ -184,9 +180,25 @@ function saveRequest (req, res){
 	})
 }
 
-function updateSalesforceIdRequest(eventdbUpdated){
-	console.log(eventdbUpdated);
-	RequestClin.findByIdAndUpdate(eventdbUpdated._id, { salesforceId: eventdbUpdated.salesforceId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+function updateSalesforceIdRequest(eventdbUpdated, response){
+	//get CaseNumber salesforce
+	serviceSalesForce.getCaseNumber(response.access_token, response.instance_url,  eventdbUpdated.salesforceId)
+	.then(response2 => {
+		if(response2.done){
+			saveSalesforceIdRequest(eventdbUpdated, response2.records[0].CaseNumber)
+		}else{
+			saveSalesforceIdRequest(eventdbUpdated, null)
+		}
+	})
+	.catch(response2 => {
+		console.log(response2)
+	})
+
+	
+}
+
+function saveSalesforceIdRequest(eventdbUpdated, salesforceCleanId){
+	RequestClin.findByIdAndUpdate(eventdbUpdated._id, { salesforceId: eventdbUpdated.salesforceId, salesforceCleanId: salesforceCleanId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
 		if (err){
 			console.log(`Error updating the patient: ${err}`);
 		}
@@ -222,7 +234,6 @@ function updateRequest (req, res){
 				if(user){
 					serviceSalesForce.getToken()
 						.then(response => {
-							console.log(response.instance_url)
 							var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
 							var data  = serviceSalesForce.setCaseData(url, user, eventdbUpdated, "Profesional-Organizacion");
 							serviceSalesForce.composite(response.access_token, response.instance_url, data)
@@ -245,7 +256,7 @@ function updateRequest (req, res){
 										updateSalesforceIdDrug(eventdbUpdated);
 									}
 									if(hasCase){
-										updateSalesforceIdRequest(eventdbUpdated);
+										updateSalesforceIdRequest(eventdbUpdated, response);
 									}
 									
 								}

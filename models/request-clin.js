@@ -28,6 +28,7 @@ const RequestClinSchema = Schema({
 	group: { type: String, default: null},
 	drugs: [drugsSchema],
 	salesforceId: {type: String, default: null},
+	salesforceCleanId: {type: String, default: null},
 	createdBy: { type: Schema.Types.ObjectId, ref: "User"}
 })
 

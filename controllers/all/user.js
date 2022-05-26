@@ -83,11 +83,9 @@ function activateUser(req, res) {
  */
 function recoverPass(req, res) {
 	req.body.email = (req.body.email).toLowerCase();
-	console.log(req.body.email);
 	User.findOne({ 'email': req.body.email }, function (err, user) {
 		if (err) return res.status(500).send({ message: 'Error searching the user' })
 		if (user) {
-			console.log(user.confirmed);
 			if (user.confirmed) {
 				//generamos una clave aleatoria y añadimos un campo con la hora de la clave proporcionada, cada que caduque a los 15 minutos
 				let randomstring = Math.random().toString(36).slice(-12)
@@ -417,7 +415,6 @@ function signUp(req, res) {
 				if (err) return res.status(500).send({ message: `Error creating the user: ${err}` })
 
 				//Create the patient
-				console.log(req.body.role);
 				if (req.body.role == 'User') {
 					var userId = userSaved._id.toString();
 					savePatient(userId, req, userSaved);
@@ -432,14 +429,9 @@ function signUp(req, res) {
 							var type = "Profesional-Organizacion";
 							var data  = serviceSalesForce.setUserData(url, user, type);
 	
-							console.log(JSON.stringify(data));
-	
 							serviceSalesForce.composite(response.access_token, response.instance_url, data)
 							.then(response2 => {
-								console.log(JSON.stringify(response2));
 								var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
-								console.log(response2.graphs[0].graphResponse.compositeResponse);
-								console.log(valueId);
 								User.findByIdAndUpdate(userSaved._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
 									if (err){
 										console.log(`Error updating the user: ${err}`);
@@ -509,7 +501,6 @@ function savePatient(userId, req, user) {
 		var id = patientStored._id.toString();
 		var idencrypt = crypt.encrypt(id);
 		var patientInfo = { sub: idencrypt, patientName: patient.patientName, surname: patient.surname, birthDate: patient.birthDate, gender: patient.gender, country: patient.country, previousDiagnosis: patient.previousDiagnosis, consentgroup: patient.consentgroup };
-		console.log('Patient created' + patientInfo);
 		//notifySalesforce
 		serviceSalesForce.getToken()
 			.then(response => {
@@ -518,7 +509,6 @@ function savePatient(userId, req, user) {
 
 				 serviceSalesForce.composite(response.access_token, response.instance_url, data)
 				.then(response2 => {
-					console.log(response2)
 					var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
 					Patient.findByIdAndUpdate(patientStored._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, patientUpdated) => {
 						if (err){
@@ -856,10 +846,8 @@ function getUserName(req, res) {
 function setPosition (req, res){
 
 	let userId= crypt.decrypt(req.params.userId);//crypt.decrypt(req.params.patientId);
-	console.log(req.body);
 	User.findByIdAndUpdate(userId, { lat: req.body.lat, lng: req.body.lng }, {select: '-createdBy', new: true}, (err,userUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-			console.log(userUpdated);
 			res.status(200).send({message: 'location updated'})
 
 	})
