@@ -132,11 +132,13 @@ function saveRequest (req, res){
 				if(user){
 					serviceSalesForce.getToken()
 						.then(response => {
+							console.log(JSON.stringify(response));
 							var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
 							var data  = serviceSalesForce.setCaseData(url, user, eventdbStored, "Profesional-Organizacion");
-
+							console.log(data)
 							serviceSalesForce.composite(response.access_token, response.instance_url, data)
 							.then(response2 => {
+								console.log(JSON.stringify(response2));
 								if(response2.graphs[0].isSuccessful){
 									var countDrugs = 0;
 									var hasCase = false;
@@ -162,16 +164,16 @@ function saveRequest (req, res){
 							})
 							.catch(response2 => {
 								console.log(response2)
-								res.status(200).send({message: 'cant noti notifySalesforce', eventdbUpdated: eventdbUpdated})
+								res.status(200).send({message: 'cant noti notifySalesforce', eventdbStored: eventdbStored})
 							})
 						})
 						.catch(response => {
 							console.log(response)
-							res.status(200).send({message: 'cant noti notifySalesforce', eventdbUpdated: eventdbUpdated})
+							res.status(200).send({message: 'cant noti notifySalesforce', eventdbStored: eventdbStored})
 						})
 				}else{
 					console.log('cant noti notifySalesforce');
-					res.status(200).send({message: 'cant noti notifySalesforce', eventdbUpdated: eventdbUpdated})
+					res.status(200).send({message: 'cant noti notifySalesforce', eventdbStored: eventdbStored})
 				}
 			})
 
@@ -184,6 +186,7 @@ function updateSalesforceIdRequest(eventdbUpdated, response){
 	//get CaseNumber salesforce
 	serviceSalesForce.getCaseNumber(response.access_token, response.instance_url,  eventdbUpdated.salesforceId)
 	.then(response2 => {
+		console.log(response2);
 		if(response2.done){
 			saveSalesforceIdRequest(eventdbUpdated, response2.records[0].CaseNumber)
 		}else{
