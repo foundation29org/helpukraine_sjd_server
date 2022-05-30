@@ -90,7 +90,7 @@ function savePatient(userId, user) {
 		if (err) console.log({ message: `Failed to save in the database: ${err} ` })
 		var id = patientStored._id.toString();
 		var idencrypt = crypt.encrypt(id);
-		var patientInfo = { sub: idencrypt, patientName: patient.patientName, surname: patient.surname, birthDate: patient.birthDate, gender: patient.gender, country: patient.country, previousDiagnosis: patient.previousDiagnosis, consentgroup: patient.consentgroup };
+		var patientInfo = { sub: idencrypt, patientName: patient.patientName, surname: patient.surname, birthDate: patient.birthDate, gender: patient.gender, country: patient.country, previousDiagnosis: patient.previousDiagnosis };
 		//notifySalesforce
 		serviceSalesForce.getToken()
 			.then(response => {

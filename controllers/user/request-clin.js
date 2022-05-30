@@ -22,87 +22,6 @@ function getRequests (req, res){
 	});
 }
 
-function getRequestsAdmin (req, res){
-	let group = req.params.groupName;
-	RequestClin.find({group: group},(err, patients) => {
-		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-		
-		
-		var totalPatients = 0;
-		var patientsAddded = 0;
-		var countpos = 0;
-		var listPatients = [];
-		if(!patients){
-			res.status(200).send(listPatients)
-		}else{
-			if(patients.length==0){
-				res.status(200).send(listPatients)
-			}else{
-				var temppatients = patients;
-				for(var i = 0; i < patients.length; i++) {
-					temppatients[i].found = false;
-					User.findOne({"_id": patients[i].createdBy},(err, user) => {
-						countpos++;
-						if(user){
-							totalPatients = totalPatients + 1;
-								
-								var enc = false;
-								var lat = '';
-								var lng = '';
-								var country = '';
-								var status = '';
-								var referralCenter = '';
-								var needAssistance = '';
-								var notes = '';
-								var group = '';
-								var drugs = [];
-								var idencrypt = '';
-								var idUserDecrypt = user._id.toString();
-								var userId = crypt.encrypt(idUserDecrypt);
-								for(var j = 0; j < temppatients.length && !enc; j++) {
-									if((temppatients[j].createdBy).toString() === (user._id).toString() && (!temppatients[j].found)){
-										temppatients[j].found = true;
-										lat = temppatients[j].lat
-										lng = temppatients[j].lng
-										country = temppatients[j].country
-										status = temppatients[j].status
-										group = temppatients[j].group
-										referralCenter = temppatients[j].referralCenter
-										needAssistance = temppatients[j].needAssistance
-										notes = temppatients[j].notes
-										drugs = temppatients[j].drugs
-										var idPatientrDecrypt = temppatients[j]._id.toString();
-										var idencrypt= crypt.encrypt(idPatientrDecrypt);
-										enc = true;
-									}
-								}
-								var userName = user.userName+' '+user.lastName;
-								listPatients.push({userId: userId, userName: userName, email: user.email, lang: user.lang,phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, lat: lat, lng: lng, country: country, status: status, group: group, notes: notes, drugs: drugs, subgroup: user.subgroup, referralCenter: referralCenter, needAssistance: needAssistance});
-								patientsAddded++;
-						}else{
-							listPatients.push({});
-						}
-						if(patientsAddded==totalPatients && countpos==patients.length){
-							var result = [];
-							for(var j = 0; j < listPatients.length; j++) {
-								if(listPatients[j].patientId!=undefined){
-									result.push(listPatients[j]);
-								}
-							}
-							res.status(200).send(result)
-						}
-					})
-				}
-			}
-		}
-
-
-
-	})
-
-}
-
-
 function saveRequest (req, res){
 	let userId= crypt.decrypt(req.params.userId);
 	let eventdb = new RequestClin()
@@ -112,6 +31,7 @@ function saveRequest (req, res){
 	eventdb.notes = req.body.notes
 	eventdb.referralCenter = req.body.referralCenter
 	eventdb.needAssistance = req.body.needAssistance
+	eventdb.birthDate = req.body.birthDate
 	eventdb.status = req.body.status
 	eventdb.updateDate = req.body.updateDate
 	eventdb.group = req.body.group
@@ -418,7 +338,6 @@ function deleteDrug(req, res){
 
 module.exports = {
 	getRequests,
-	getRequestsAdmin,
 	saveRequest,
 	updateRequest,
 	deleteRequest,
