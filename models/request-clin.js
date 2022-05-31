@@ -18,6 +18,7 @@ const drugsSchema = Schema({
 const RequestClinSchema = Schema({
 	lat: {type: String, default: ''},
 	lng: {type: String, default: ''},
+	birthDate: Date,
 	country: {type: String, default: null},
 	notes: {type: String, default: ''},
 	status: {type: String, default: null},

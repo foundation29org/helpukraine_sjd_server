@@ -229,11 +229,11 @@ function updatePatient (req, res){
 	let patientId= crypt.decrypt(req.params.patientId);
 	let update = req.body
   Patient.findByIdAndUpdate(patientId, update, {new: true}, async (err,patientUpdated) => {
-  //Patient.findByIdAndUpdate(patientId, { gender: req.body.gender, birthDate: req.body.birthDate, patientName: req.body.patientName, surname: req.body.surname, relationship: req.body.relationship, country: req.body.country, previousDiagnosis: req.body.previousDiagnosis, group: req.body.group, consentgroup: req.body.consentgroup }, {new: true}, async (err,patientUpdated) => {
+  //Patient.findByIdAndUpdate(patientId, { gender: req.body.gender, birthDate: req.body.birthDate, patientName: req.body.patientName, surname: req.body.surname, relationship: req.body.relationship, country: req.body.country, previousDiagnosis: req.body.previousDiagnosis, group: req.body.group }, {new: true}, async (err,patientUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
 		var id = patientUpdated._id.toString();
 		var idencrypt= crypt.encrypt(id);
-		var patientInfo = {sub:idencrypt, patientName: patientUpdated.patientName, surname: patientUpdated.surname, birthDate: patientUpdated.birthDate, gender: patientUpdated.gender, country: patientUpdated.country, previousDiagnosis: patientUpdated.previousDiagnosis, group: patientUpdated.group, consentgroup: patientUpdated.consentgroup};
+		var patientInfo = {sub:idencrypt, patientName: patientUpdated.patientName, surname: patientUpdated.surname, birthDate: patientUpdated.birthDate, gender: patientUpdated.gender, country: patientUpdated.country, previousDiagnosis: patientUpdated.previousDiagnosis, group: patientUpdated.group};
 		
 		//notifySalesforce
 			User.findById(patientUpdated.createdBy, (err, user) => {
@@ -337,29 +337,6 @@ function setStatus (req, res){
 			console.log(err);
 			return res.status(200).send({message: 'error'})
 		}
-	})
-}
-
-function consentgroup (req, res){
-
-	let patientId= crypt.decrypt(req.params.patientId);//crypt.decrypt(req.params.patientId);
-
-	Patient.findByIdAndUpdate(patientId, { consentgroup: req.body.consentgroup }, {select: '-createdBy', new: true}, (err,patientUpdated) => {
-		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-
-			res.status(200).send({message: 'notes changed', patient: patientUpdated})
-
-	})
-}
-
-function getConsentGroup (req, res){
-
-	let patientId= crypt.decrypt(req.params.patientId);//crypt.decrypt(req.params.patientId);
-
-	Patient.findById(patientId, {"_id" : false , "createdBy" : false }, (err,patient) => {
-		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-			res.status(200).send({consentgroup: patient.consentgroup})
-
 	})
 }
 
@@ -502,8 +479,6 @@ module.exports = {
 	changenotes,
   	getStatus,
 	setStatus,
-	consentgroup,
-	getConsentGroup,
 	setChecks,
 	getChecks,
 	saveDrugs,

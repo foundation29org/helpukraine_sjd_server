@@ -63,8 +63,6 @@ api.put('/patients/:patientId', auth(roles.UserClinical), patientCtrl.updatePati
 api.put('/patients/changenotes/:patientId', auth(roles.AllLessResearcher), patientCtrl.changenotes)
 api.get('/patient/status/:patientId', auth(roles.AdminSuperAdmin), patientCtrl.getStatus)
 api.put('/patient/status/:patientId', auth(roles.AdminSuperAdmin), patientCtrl.setStatus)
-api.put('/patient/consentgroup/:patientId', auth(roles.All), patientCtrl.consentgroup)
-api.get('/patient/consentgroup/:patientId', auth(roles.All), patientCtrl.getConsentGroup)
 api.put('/patient/checks/:patientId', auth(roles.All), patientCtrl.setChecks)
 api.get('/patient/checks/:patientId', auth(roles.All), patientCtrl.getChecks)
 api.put('/patient/drugs/:patientId', auth(roles.All), patientCtrl.saveDrugs)
@@ -131,7 +129,6 @@ api.put('/admin/users/subgroup/:userId', auth(roles.Admin), admninUsersCtrl.setS
 api.put('/admin/users/state/:userId', auth(roles.Admin), admninUsersCtrl.setStateUser)
 
 api.get('/requestclin/:userId', auth(roles.AdminClinical), requestCliCtrl.getRequests)
-api.get('/admin/requestclin/:groupName', auth(roles.Admin), requestCliCtrl.getRequestsAdmin)
 api.post('/requestclin/:userId', auth(roles.AdminClinical), requestCliCtrl.saveRequest)
 api.put('/requestclin/:requestId', auth(roles.AdminClinical), requestCliCtrl.updateRequest)
 api.delete('/requestclin/:requestId', auth(roles.AdminClinical), requestCliCtrl.deleteRequest)
