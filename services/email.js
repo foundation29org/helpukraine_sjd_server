@@ -33,7 +33,7 @@ function sendMailVerifyEmail (email, userName, randomstring, lang, group){
 
     var mailOptions = {
       to: email,
-      from: TRANSPORTER_OPTIONS.auth.user,
+      from: 'noreplyhub4ua@sjd.es',
       bcc: maillistbcc,
       subject: subjectlang,
       template: 'verify_email/_'+lang,
@@ -71,7 +71,7 @@ function sendMailFailSend (email){
     var emailToFinal = 'support@foundation29.org'
     var mailOptions = {
       to: emailToFinal,
-      from: TRANSPORTER_OPTIONS.auth.user,
+      from: 'noreplyhub4ua@sjd.es',
       bcc: maillistbcc,
       subject: 'Message for support. Fail email Rare Diseases Hub Ukraine: '+ email,
       template: 'mail_support/fail',
@@ -107,7 +107,7 @@ function sendMailRecoverPass (email, userName, randomstring, lang){
 
     var mailOptions = {
       to: email,
-      from: TRANSPORTER_OPTIONS.auth.user,
+      from: 'noreplyhub4ua@sjd.es',
       bcc: maillistbcc,
       subject: subjectlang,
       template: 'recover_pass/_'+lang,
@@ -159,7 +159,7 @@ function sendMailSupport (email, lang, role, supportStored, emailTo){
 
     var mailOptions = {
       to: emailToFinal,
-      from: TRANSPORTER_OPTIONS.auth.user,
+      from: 'noreplyhub4ua@sjd.es',
       bcc: maillistbcc,
       subject: 'Message for support. Rare Diseases Hub Ukraine Id: '+ supportStored._id,
       template: 'mail_support/_en',
