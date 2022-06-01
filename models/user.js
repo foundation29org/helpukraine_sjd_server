@@ -10,16 +10,6 @@ const { conndbaccounts } = require('../db_connect')
 const MAX_LOGIN_ATTEMPTS = 5
 const LOCK_TIME = 2 * 60 * 60 * 1000
 
-const SiblingSchema = Schema({
-	gender: String,
-	affected: { type: String, enum: ['yes', 'no'] }
-})
-
-const ParentSchema = Schema({
-	highEducation: String,
-	profession: String
-})
-
 const checksSchema = Schema({
 	check1: {type: Boolean, default: false},
 	check2: {type: Boolean, default: false},

@@ -488,9 +488,6 @@ function savePatient(userId, req, user) {
 	patient.phone1 = req.body.phone1
 	patient.phone2 = req.body.phone2
 	patient.gender = req.body.gender
-	patient.siblings = req.body.siblings
-	patient.parents = req.body.parents
-	patient.relationship = req.body.relationship
 	patient.previousDiagnosis = req.body.previousDiagnosis
 	patient.createdBy = userId
 
