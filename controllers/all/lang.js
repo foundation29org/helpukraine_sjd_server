@@ -59,7 +59,7 @@ function getLangs (req, res){
 		if(langs!=undefined){
 			langs.forEach(function(lang) {
 				if(lang.code!='nl'){
-					listLangs.push({name:lang.name, code: lang.code});
+					listLangs.push({name:lang.name, code: lang.code, order: lang.order});
 				}
 
 	    });

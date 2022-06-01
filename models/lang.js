@@ -8,7 +8,8 @@ const { conndbaccounts } = require('../db_connect')
 
 const LangSchema = Schema({
 	name: {	type: String,	unique: true,	required: true },
-	code: {	type: String,	index: true,	unique: true,	required: true }
+	code: {	type: String,	index: true,	unique: true,	required: true },
+	order: String
 }, { versionKey: false // You should be aware of the outcome after set to false
 })
 
