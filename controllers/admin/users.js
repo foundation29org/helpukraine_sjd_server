@@ -191,10 +191,45 @@ async function getInfoUser(patient) {
 					})
 						
 				}
-				var resp = {userId: userId, userName: userName, email: user.email, lang: user.lang, phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, birthDate: patient.birthDate, lat: patient.lat, lng: patient.lng, status: patient.status, group: patient.group, notes: patient.notes, drugs: patient.drugs, subgroup: user.subgroup, role: patient.role, msgs: msgs, unread: unread, creationDate: patient.creationDate, referralCenter: patient.referralCenter, needAssistance: patient.needAssistance, country: patient.country}
+				var resp = {userId: userId, userName: userName, email: user.email, lang: user.lang, phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, birthDate: patient.birthDate, lat: patient.lat, lng: patient.lng, status: patient.status, group: patient.group, notes: patient.notes, drugs: patient.drugs, subgroup: user.subgroup, role: patient.role, msgs: msgs, unread: unread, creationDate: patient.creationDate, referralCenter: patient.referralCenter, needAssistance: patient.needAssistance, country: patient.country, salesforceId: patient.salesforceId}
 				resolve(resp);
 			}else{
 				resolve({})
+			}
+			
+		})
+	});
+}
+
+
+async function notactivedusers(req, res) {
+	try {
+		var data = await getNotActivedInfoUsers();
+		return res.status(200).send(data)
+	} catch (e) {
+		console.error("Error: ", e);
+	}
+}
+
+async function getNotActivedInfoUsers() {
+	return new Promise(async function (resolve, reject) {
+		var resp = [];
+		await User.find({"confirmed": "false"},async (err, users) => {
+			if (err) {
+				console.log(err);
+				resolve(err)
+			}
+			if(users.length>0){
+				for (var userindex in users) {
+					var user = users[userindex];
+					var idUserDecrypt = user._id.toString();
+					var userId = crypt.encrypt(idUserDecrypt);
+					var userName = user.userName+' '+user.lastName;
+					resp.push({userId: userId, userName: userName, email: user.email, lang: user.lang, phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, salesforceId: user.salesforceId});
+				}
+				resolve(resp);
+			}else{
+				resolve(resp)
 			}
 			
 		})
@@ -367,6 +402,7 @@ function setStateUser (req, res){
 module.exports = {
 	getUsers,
 	getAllUsers,
+	notactivedusers,
 	setDeadPatient,
 	setSubgroupUser,
 	setStateUser

@@ -123,7 +123,8 @@ api.post('/openraito/patient/individualshare/:patientId', auth(roles.OnlyUser), 
 
 
 api.get('/admin/users/:groupName', auth(roles.Readers), admninUsersCtrl.getUsers)
-api.get('/admin/allusers', auth(roles.Readers), admninUsersCtrl.getAllUsers)
+api.get('/admin/allusers', auth(roles.AdminSuperAdmin), admninUsersCtrl.getAllUsers)
+api.get('/admin/notactivedusers', auth(roles.AdminSuperAdmin), admninUsersCtrl.notactivedusers)
 api.put('/admin/patients/:patientId', auth(roles.Admin), admninUsersCtrl.setDeadPatient)
 api.put('/admin/users/subgroup/:userId', auth(roles.Admin), admninUsersCtrl.setSubgroupUser)
 api.put('/admin/users/state/:userId', auth(roles.Admin), admninUsersCtrl.setStateUser)
