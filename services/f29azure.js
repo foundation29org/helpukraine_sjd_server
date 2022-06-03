@@ -36,7 +36,7 @@ function getAzureBlobSasTokenWithContainer(req, res) {
 
   var containerSAS = storage.generateBlobSASQueryParameters({
     expiresOn: expiryDate,
-    permissions: storage.ContainerSASPermissions.parse("rwdlac"),
+    permissions: storage.ContainerSASPermissions.parse("w"),
     protocol: storage.SASProtocol.Https,
     containerName: containerName,
     startsOn: startDate,

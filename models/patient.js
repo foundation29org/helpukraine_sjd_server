@@ -5,7 +5,7 @@ const mongoose = require ('mongoose')
 const Schema = mongoose.Schema
 const User = require('./user')
 
-const { conndbaccounts } = require('../db_connect')
+const { conndbdata } = require('../db_connect')
 
 const checksSchema = Schema({
 	check1: {type: Boolean, default: false},
@@ -60,5 +60,5 @@ const PatientSchema = Schema({
 	drugs: [drugsSchema]
 })
 
-module.exports = conndbaccounts.model('Patient',PatientSchema)
+module.exports = conndbdata.model('Patient',PatientSchema)
 // we need to export the model so that it is accessible in the rest of the app
