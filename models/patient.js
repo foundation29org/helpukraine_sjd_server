@@ -6,6 +6,7 @@ const Schema = mongoose.Schema
 const User = require('./user')
 
 const { conndbdata } = require('../db_connect')
+const crypt = require('../services/crypt')
 
 const checksSchema = Schema({
 	check1: {type: Boolean, default: false},
@@ -48,7 +49,7 @@ const PatientSchema = Schema({
 	creationDate: {type: Date, default: Date.now},
 	previousDiagnosis: {type: String, default: null},
 	referralCenter: {type: String, default: null},
-	needAssistance: {type: String, default: null},
+	needAssistance: {type: String, default: ''},
 	group: { type: String, default: null},
 	salesforceId: {type: String, default: null},
 	checks: {type: checksSchema, default: {
@@ -59,6 +60,56 @@ const PatientSchema = Schema({
 	}},
 	drugs: [drugsSchema]
 })
+
+PatientSchema.pre('save', function (next) {
+	this.lat = crypt.encrypt(this.lat)
+	this.lng = crypt.encrypt(this.lng)
+	this.needAssistance = crypt.encrypt(this.needAssistance);
+	next();
+});
+
+PatientSchema.post('save', function (document) {
+	if(document !== null){
+		document.lat = crypt.decrypt(document.lat)
+		document.lng = crypt.decrypt(document.lng)
+		document.needAssistance = crypt.decrypt(document.needAssistance)
+	}
+});
+
+PatientSchema.post('findOne', function (document) {
+	if(document !== null){
+		document.lat = crypt.decrypt(document.lat)
+		document.lng = crypt.decrypt(document.lng)
+		document.needAssistance = crypt.decrypt(document.needAssistance)
+	}
+});
+
+PatientSchema.post('find', function (documents) {
+	if(documents !== null){
+		//console.log(documents)
+		documents.forEach(function(document) {
+			document.lat = crypt.decrypt(document.lat)
+			document.lng = crypt.decrypt(document.lng)
+			document.needAssistance = crypt.decrypt(document.needAssistance)
+		});
+	}
+});
+
+PatientSchema.post('findById', function (document) {
+	if(document !== null){
+		document.lat = crypt.decrypt(document.lat)
+		document.lng = crypt.decrypt(document.lng)
+		document.needAssistance = crypt.decrypt(document.needAssistance)
+	}
+});
+
+PatientSchema.post('findByIdAndUpdate', function (document) {
+	if(document !== null){
+		document.lat = crypt.decrypt(document.lat)
+		document.lng = crypt.decrypt(document.lng)
+		document.needAssistance = crypt.decrypt(document.needAssistance)
+	}
+});
 
 module.exports = conndbdata.model('Patient',PatientSchema)
 // we need to export the model so that it is accessible in the rest of the app

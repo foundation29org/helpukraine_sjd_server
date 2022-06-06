@@ -1,6 +1,7 @@
 'use strict'
 const config = require('../config')
 const request = require('request')
+const crypt = require('../services/crypt')
 const { blobAccessToken } = require('../config')
 
 function getToken (){
@@ -86,7 +87,7 @@ function setCaseData(url, user, patient, type){
              "VH_Geolocalizacion__latitude__s":patient.lat,
              "VH_Geolocalizacion__longitude__s":patient.lng,
              "VH_CentroMedicoReferencia__c":patient.referralCenter,
-             "VH_NecesidadAsistencia__c":patient.needAssistance,
+             "VH_NecesidadAsistencia__c": patient.needAssistance,
              "VH_Pais__c":patient.country,
              "Description":null,
              "Type": type,
@@ -102,6 +103,7 @@ function setCaseData(url, user, patient, type){
        }
     ]
    };
+   console.log(JSON.stringify(data));
 
    if(patient.drugs.length>0){
     for(let i = 0; i < patient.drugs.length; i++){
