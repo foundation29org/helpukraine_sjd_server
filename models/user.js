@@ -189,7 +189,7 @@ UserSchema.statics.getAuthenticated = function (email, password, cb) {
 				return cb(null, null, reasons.PASSWORD_INCORRECT);
 			});
 		});
-	}).select('_id email +password loginAttempts lockUntil confirmed lastLogin role subrole userName lang randomCodeRecoverPass dateTimeRecoverPass group blockedaccount permissions platform shared');
+	}).select('_id email +password loginAttempts lockUntil confirmed lastLogin role subrole userName lastName phone lang randomCodeRecoverPass dateTimeRecoverPass group blockedaccount permissions platform shared');
 };
 
 UserSchema.post('save', function (document) {
@@ -202,6 +202,7 @@ UserSchema.post('save', function (document) {
 
 UserSchema.post('findOne', function (document) {
 	if(document !== null){
+		console.log(document);
 		document.phone = crypt.decrypt(document.phone)
 		document.lastName = crypt.decrypt(document.lastName)
 		document.userName = crypt.decrypt(document.userName)
