@@ -89,11 +89,9 @@ UserSchema.pre('save', function (next) {
 			if (err) return next(err)
 
 			user.password = hash
-			console.log(user);
 			user.phone = crypt.encrypt(user.phone)
 			user.lastName = crypt.encrypt(user.lastName)
 			user.userName = crypt.encrypt(user.userName);
-			console.log(user);
 			next()
 		})
 	})
@@ -191,7 +189,7 @@ UserSchema.statics.getAuthenticated = function (email, password, cb) {
 				return cb(null, null, reasons.PASSWORD_INCORRECT);
 			});
 		});
-	}).select('_id email +password loginAttempts lockUntil confirmed lastLogin role subrole userName lang randomCodeRecoverPass dateTimeRecoverPass group blockedaccount permissions platform shared');
+	}).select('_id email +password loginAttempts lockUntil confirmed lastLogin role subrole userName lastName phone lang randomCodeRecoverPass dateTimeRecoverPass group blockedaccount permissions platform shared');
 };
 
 UserSchema.post('save', function (document) {
@@ -199,13 +197,12 @@ UserSchema.post('save', function (document) {
 		document.phone = crypt.decrypt(document.phone)
 		document.lastName = crypt.decrypt(document.lastName)
 		document.userName = crypt.decrypt(document.userName)
-		console.log('-----');
-		console.log(document);
 	}
 });
 
 UserSchema.post('findOne', function (document) {
 	if(document !== null){
+		console.log(document);
 		document.phone = crypt.decrypt(document.phone)
 		document.lastName = crypt.decrypt(document.lastName)
 		document.userName = crypt.decrypt(document.userName)
@@ -214,7 +211,6 @@ UserSchema.post('findOne', function (document) {
 
 UserSchema.post('find', function (documents) {
 	if(documents !== null){
-		//console.log(documents)
 		documents.forEach(function(document) {
 			document.phone = crypt.decrypt(document.phone)
 			document.lastName = crypt.decrypt(document.lastName)
