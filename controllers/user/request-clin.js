@@ -5,6 +5,7 @@
 // add the social-info model
 const RequestClin = require('../../models/request-clin')
 const Patient = require('../../models/patient')
+const Support = require('../../models/support')
 const crypt = require('../../services/crypt')
 const User = require('../../models/user')
 const serviceSalesForce = require('../../services/salesForce')
@@ -21,32 +22,17 @@ function getRequests (req, res){
 		});
 		res.status(200).send(listEventsdb)
 	});
-
-	
-	/*RequestClin.find({},(err, eventsdb) => {
-		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-		var listEventsdb = [];
-
-		eventsdb.forEach(function(eventdb) {
-			eventdb.lat = crypt.encrypt(eventdb.lat)
-			eventdb.lng = crypt.encrypt(eventdb.lng)
-			eventdb.needAssistance = crypt.encrypt(eventdb.needAssistance)
-			RequestClin.findByIdAndUpdate(eventdb._id, eventdb, { new: true}, (err,eventdbUpdated) => {
-			});
-		});
-	});*/
 	
 	
-	/*Patient.find({},(err, eventsdb) => {
+	/*Support.find({},(err, eventsdb) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
 		var listEventsdb = [];
 
 		eventsdb.forEach(function(eventdb) {
 			console.log(eventdb);
-			eventdb.lat = crypt.encrypt(eventdb.lat)
-			eventdb.lng = crypt.encrypt(eventdb.lng)
-			eventdb.needAssistance = crypt.encrypt(eventdb.needAssistance)
-			Patient.findByIdAndUpdate(eventdb._id, eventdb, { new: true}, (err,eventdbUpdated) => {
+			eventdb.description = crypt.encrypt(eventdb.description)
+			eventdb.subject = crypt.encrypt(eventdb.subject)
+			Support.findByIdAndUpdate(eventdb._id, eventdb, { new: true}, (err,eventdbUpdated) => {
 			});
 		});
 	});*/
