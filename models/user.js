@@ -70,13 +70,6 @@ UserSchema.virtual('isLocked').get(function () {
 	return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 
-/*UserSchema.pre('save', function (next) {
-	this.lat = crypt.encrypt(this.lat)
-	this.lng = crypt.encrypt(this.lng)
-	this.needAssistance = crypt.encrypt(this.needAssistance);
-	next();
-});*/
-
 UserSchema.pre('save', function (next) {
 	
 	let user = this

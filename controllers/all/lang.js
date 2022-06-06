@@ -6,6 +6,8 @@
 const Lang = require('../../models/lang')
 const User = require('../../models/user')
 const crypt = require('../../services/crypt')
+const RequestClin = require('../../models/request-clin')
+const Patient = require('../../models/patient')
 
 /**
  * @api {get} https://virtualhubukraine.azurewebsites.net/api/langs/ Get languages
@@ -52,20 +54,44 @@ const crypt = require('../../services/crypt')
  *   }
  * ]
  */
-function getLangs (req, res){
-	Lang.find({}, function(err, langs) {
-    var listLangs = [];
+function getLangs(req, res) {
+	Lang.find({}, function (err, langs) {
+		var listLangs = [];
 
-		if(langs!=undefined){
-			langs.forEach(function(lang) {
-				if(lang.code!='nl'){
-					listLangs.push({name:lang.name, code: lang.code, order: lang.order});
+		if (langs != undefined) {
+			langs.forEach(function (lang) {
+				if (lang.code != 'nl') {
+					listLangs.push({ name: lang.name, code: lang.code, order: lang.order });
 				}
 
-	    });
+			});
 		}
-    res.status(200).send(listLangs)
-  });
+		/*RequestClin.find({}, (err, eventsdb) => {
+			if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
+			var listEventsdb = [];
+
+			eventsdb.forEach(function (eventdb) {
+				console.log(eventdb);
+				eventdb.referralCenter = crypt.encrypt(eventdb.referralCenter);
+				RequestClin.findByIdAndUpdate(eventdb._id, eventdb, { new: true }, (err, eventdbUpdated) => {
+				});
+			});
+		});
+
+		Patient.find({},(err, eventsdb) => {
+			if (err) return res.status(500).send({message: `Error making the request: ${err}`})
+			var listEventsdb = [];
+	
+			eventsdb.forEach(function(eventdb) {
+				console.log(eventdb);
+				eventdb.referralCenter = crypt.encrypt(eventdb.referralCenter);
+				Patient.findByIdAndUpdate(eventdb._id, eventdb, { new: true}, (err,eventdbUpdated) => {
+				});
+			});
+		});*/
+
+		res.status(200).send(listLangs)
+	});
 }
 
 module.exports = {

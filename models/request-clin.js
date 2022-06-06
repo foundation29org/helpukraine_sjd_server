@@ -25,7 +25,7 @@ const RequestClinSchema = Schema({
 	status: {type: String, default: null},
 	updateDate: {type: Date, default: Date.now},
 	creationDate: {type: Date, default: Date.now},
-	referralCenter: {type: String, default: null},
+	referralCenter: {type: String, default: ''},
 	needAssistance: {type: String, default: ''},
 	group: { type: String, default: null},
 	drugs: [drugsSchema],
@@ -38,6 +38,7 @@ RequestClinSchema.pre('save', function (next) {
 	this.lat = crypt.encrypt(this.lat)
 	this.lng = crypt.encrypt(this.lng)
 	this.needAssistance = crypt.encrypt(this.needAssistance);
+	this.referralCenter = crypt.encrypt(this.referralCenter);
 	next();
 });
 
@@ -46,6 +47,7 @@ RequestClinSchema.post('save', function (document) {
 		document.lat = crypt.decrypt(document.lat)
 		document.lng = crypt.decrypt(document.lng)
 		document.needAssistance = crypt.decrypt(document.needAssistance)
+		document.referralCenter = crypt.decrypt(document.referralCenter)
 	}
 });
 
@@ -54,6 +56,7 @@ RequestClinSchema.post('findOne', function (document) {
 		document.lat = crypt.decrypt(document.lat)
 		document.lng = crypt.decrypt(document.lng)
 		document.needAssistance = crypt.decrypt(document.needAssistance)
+		document.referralCenter = crypt.decrypt(document.referralCenter)
 	}
 });
 
@@ -64,6 +67,7 @@ RequestClinSchema.post('find', function (documents) {
 			document.lat = crypt.decrypt(document.lat)
 			document.lng = crypt.decrypt(document.lng)
 			document.needAssistance = crypt.decrypt(document.needAssistance)
+			document.referralCenter = crypt.decrypt(document.referralCenter)
 		});
 	}
 });
@@ -73,6 +77,7 @@ RequestClinSchema.post('findById', function (document) {
 		document.lat = crypt.decrypt(document.lat)
 		document.lng = crypt.decrypt(document.lng)
 		document.needAssistance = crypt.decrypt(document.needAssistance)
+		document.referralCenter = crypt.decrypt(document.referralCenter)
 	}
 });
 
@@ -81,6 +86,7 @@ RequestClinSchema.post('findByIdAndUpdate', function (document) {
 		document.lat = crypt.decrypt(document.lat)
 		document.lng = crypt.decrypt(document.lng)
 		document.needAssistance = crypt.decrypt(document.needAssistance)
+		document.referralCenter = crypt.decrypt(document.referralCenter)
 	}
 });
 

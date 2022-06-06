@@ -153,6 +153,7 @@ function updateRequest (req, res){
 	update.lat = crypt.encrypt(update.lat.toString())
 	update.lng = crypt.encrypt(update.lng.toString())
 	update.needAssistance = crypt.encrypt(update.needAssistance)
+	update.referralCenter = crypt.encrypt(update.referralCenter)
 	RequestClin.findByIdAndUpdate(requestId, update, { new: true}, (err,eventdbUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
 		//notifySalesforce
@@ -160,6 +161,7 @@ function updateRequest (req, res){
 		eventdbUpdated.lat = crypt.decrypt(eventdbUpdated.lat)
 		eventdbUpdated.lng = crypt.decrypt(eventdbUpdated.lng)
 		eventdbUpdated.needAssistance = crypt.decrypt(eventdbUpdated.needAssistance)
+		eventdbUpdated.referralCenter = crypt.decrypt(eventdbUpdated.referralCenter)
 			var id = eventdbUpdated._id.toString();
 			var idencrypt = crypt.encrypt(id);
 			User.findById(eventdbUpdated.createdBy, (err, user) => {
