@@ -89,11 +89,9 @@ UserSchema.pre('save', function (next) {
 			if (err) return next(err)
 
 			user.password = hash
-			console.log(user);
 			user.phone = crypt.encrypt(user.phone)
 			user.lastName = crypt.encrypt(user.lastName)
 			user.userName = crypt.encrypt(user.userName);
-			console.log(user);
 			next()
 		})
 	})
@@ -199,8 +197,6 @@ UserSchema.post('save', function (document) {
 		document.phone = crypt.decrypt(document.phone)
 		document.lastName = crypt.decrypt(document.lastName)
 		document.userName = crypt.decrypt(document.userName)
-		console.log('-----');
-		console.log(document);
 	}
 });
 
@@ -214,7 +210,6 @@ UserSchema.post('findOne', function (document) {
 
 UserSchema.post('find', function (documents) {
 	if(documents !== null){
-		//console.log(documents)
 		documents.forEach(function(document) {
 			document.phone = crypt.decrypt(document.phone)
 			document.lastName = crypt.decrypt(document.lastName)

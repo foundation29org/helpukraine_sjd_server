@@ -64,20 +64,6 @@ function getLangs (req, res){
 
 	    });
 		}
-
-		/*User.find({},(err, eventsdb) => {
-		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-		var listEventsdb = [];
-
-		eventsdb.forEach(function(eventdb) {
-			console.log(eventdb);
-			eventdb.phone = crypt.encrypt(eventdb.phone)
-			eventdb.lastName = crypt.encrypt(eventdb.lastName)
-			eventdb.userName = crypt.encrypt(eventdb.userName)
-			User.findByIdAndUpdate(eventdb._id, eventdb, { new: true}, (err,eventdbUpdated) => {
-			});
-		});
-	});*/
     res.status(200).send(listLangs)
   });
 }
