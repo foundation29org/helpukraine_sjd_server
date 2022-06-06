@@ -27,7 +27,7 @@ function activateUser(req, res) {
 				user2.confirmed = true;
 				let update = user2;
 				let userId = user2._id
-				User.findByIdAndUpdate(userId, update, (err, userUpdated) => {
+				User.findByIdAndUpdate(userId, { confirmed: true }, {select: '-createdBy', new: true}, (err,userUpdated) => {
 					if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
 					res.status(200).send({ message: 'activated' })
 				})
@@ -93,7 +93,7 @@ function recoverPass(req, res) {
 				user.dateTimeRecoverPass = Date.now();
 
 				//guardamos los valores en BD y enviamos Email
-				User.findByIdAndUpdate(user._id, user, (err, userUpdated) => {
+				User.findByIdAndUpdate(user._id, { dateTimeRecoverPass: user.dateTimeRecoverPass, randomCodeRecoverPass:  user.randomCodeRecoverPass}, {select: '-createdBy', new: true}, (err,userUpdated) => {
 					if (err) return res.status(500).send({ message: 'Error saving the user' })
 
 					serviceEmail.sendMailRecoverPass(req.body.email, user.userName, randomstring, user.lang)
@@ -191,7 +191,7 @@ function updatePass(req, res) {
 							if (err) return res.status(500).send({ message: 'error hash' })
 
 							userToSave.password = hash
-							User.findByIdAndUpdate(userToSave._id, userToSave, (err, userUpdated) => {
+							User.findByIdAndUpdate(userToSave._id, { password: userToSave.password }, {select: '-createdBy', new: true}, (err,userUpdated) => {
 								if (err) return res.status(500).send({ message: 'Error saving the pass' })
 								if (!userUpdated) return res.status(500).send({ message: 'not found' })
 
@@ -281,7 +281,7 @@ function newPass(req, res) {
 					if (err) return res.status(500).send({ message: 'error hash' })
 
 					userToUpdate.password = hash
-					User.findByIdAndUpdate(userToUpdate._id, userToUpdate, (err, userUpdated) => {
+					User.findByIdAndUpdate(userToUpdate._id, { password: userToUpdate.password }, {select: '-createdBy', new: true}, (err,userUpdated) => {
 						if (err) return res.status(500).send({ message: 'Error saving the pass' })
 						if (!userUpdated) return res.status(500).send({ message: 'not found' })
 
@@ -798,10 +798,14 @@ function getSettings(req, res) {
 function updateUser(req, res) {
 	let userId = crypt.decrypt(req.params.userId);
 	let update = req.body
-
+	update.phone = crypt.encrypt(update.phone)
+	update.lastName = crypt.encrypt(update.lastName)
+	update.userName = crypt.encrypt(update.userName)
 	User.findByIdAndUpdate(userId, update, { select: '-_id userName lastName lang email signupDate massunit lengthunit phone countryselectedPhoneCode', new: true }, (err, userUpdated) => {
 		if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-
+		userUpdated.phone = crypt.decrypt(userUpdated.phone)
+		userUpdated.lastName = crypt.decrypt(userUpdated.lastName)
+		userUpdated.userName = crypt.decrypt(userUpdated.userName)
 		res.status(200).send({ user: userUpdated })
 	})
 }
