@@ -180,10 +180,13 @@ function getAllMsgs(req, res){
 function updateMsg (req, res){
 	let supportId= req.params.supportId;
 	let update = req.body
+	update.description = crypt.encrypt(update.description)
+	update.subject = crypt.encrypt(update.subject)
 
 	Support.findByIdAndUpdate(supportId, update, {select: '-createdBy', new: true}, (err,diagnosisUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-
+		diagnosisUpdated.description = crypt.decrypt(diagnosisUpdated.description)
+		diagnosisUpdated.subject = crypt.decrypt(diagnosisUpdated.subject)
 		res.status(200).send({message: 'Msg updated', msg: diagnosisUpdated})
 
 	})
