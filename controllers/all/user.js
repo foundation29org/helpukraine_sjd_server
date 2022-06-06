@@ -501,7 +501,7 @@ function savePatient(userId, req, user) {
 		serviceSalesForce.getToken()
 			.then(response => {
 				var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
-				var data  = serviceSalesForce.setCaseData(url, user, patient, "Paciente");
+				var data  = serviceSalesForce.setCaseData(url, user, patientStored, "Paciente");
 
 				 serviceSalesForce.composite(response.access_token, response.instance_url, data)
 				.then(response2 => {

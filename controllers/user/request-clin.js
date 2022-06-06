@@ -4,6 +4,7 @@
 
 // add the social-info model
 const RequestClin = require('../../models/request-clin')
+const Patient = require('../../models/patient')
 const crypt = require('../../services/crypt')
 const User = require('../../models/user')
 const serviceSalesForce = require('../../services/salesForce')
@@ -16,31 +17,50 @@ function getRequests (req, res){
 		var listEventsdb = [];
 
 		eventsdb.forEach(function(eventdb) {
-			if(eventdb.lat!=undefined){
-				eventdb.lat = crypt.decrypt(eventdb.lat)
-				console.log(eventdb.lat);
-			}
-			if(eventdb.lng!=undefined){
-				eventdb.lng = crypt.decrypt(eventdb.lng)
-			}
-			if(eventdb.needAssistance!=null){
-				eventdb.needAssistance = crypt.decrypt(eventdb.needAssistance)
-			}
 			listEventsdb.push(eventdb);
 		});
 		res.status(200).send(listEventsdb)
 	});
+
+	
+	/*RequestClin.find({},(err, eventsdb) => {
+		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
+		var listEventsdb = [];
+
+		eventsdb.forEach(function(eventdb) {
+			eventdb.lat = crypt.encrypt(eventdb.lat)
+			eventdb.lng = crypt.encrypt(eventdb.lng)
+			eventdb.needAssistance = crypt.encrypt(eventdb.needAssistance)
+			RequestClin.findByIdAndUpdate(eventdb._id, eventdb, { new: true}, (err,eventdbUpdated) => {
+			});
+		});
+	});*/
+	
+	
+	/*Patient.find({},(err, eventsdb) => {
+		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
+		var listEventsdb = [];
+
+		eventsdb.forEach(function(eventdb) {
+			console.log(eventdb);
+			eventdb.lat = crypt.encrypt(eventdb.lat)
+			eventdb.lng = crypt.encrypt(eventdb.lng)
+			eventdb.needAssistance = crypt.encrypt(eventdb.needAssistance)
+			Patient.findByIdAndUpdate(eventdb._id, eventdb, { new: true}, (err,eventdbUpdated) => {
+			});
+		});
+	});*/
 }
 
 function saveRequest (req, res){
 	let userId= crypt.decrypt(req.params.userId);
 	let eventdb = new RequestClin()
-	eventdb.lat = crypt.encrypt(req.body.lat)
-	eventdb.lng = crypt.encrypt(req.body.lng)
+	eventdb.lat = req.body.lat
+	eventdb.lng = req.body.lng
 	eventdb.country = req.body.country
 	eventdb.notes = req.body.notes
 	eventdb.referralCenter = req.body.referralCenter
-	eventdb.needAssistance = crypt.encrypt(req.body.needAssistance)
+	eventdb.needAssistance = req.body.needAssistance
 	eventdb.birthDate = req.body.birthDate
 	eventdb.status = req.body.status
 	eventdb.updateDate = req.body.updateDate
@@ -156,13 +176,19 @@ function updateRequest (req, res){
 	let requestId= req.params.requestId;
 	let update = req.body
 	update.updateDate = Date.now();
-	update.lat = crypt.encrypt(update.lat)
-	update.lng = crypt.encrypt(update.lng)
+	update.lat = update.lat
+	update.lng = update.lng
+	update.needAssistance = update.needAssistance
+	update.lat = crypt.encrypt(update.lat.toString())
+	update.lng = crypt.encrypt(update.lng.toString())
 	update.needAssistance = crypt.encrypt(update.needAssistance)
 	RequestClin.findByIdAndUpdate(requestId, update, { new: true}, (err,eventdbUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
 		//notifySalesforce
-
+		
+		eventdbUpdated.lat = crypt.decrypt(eventdbUpdated.lat)
+		eventdbUpdated.lng = crypt.decrypt(eventdbUpdated.lng)
+		eventdbUpdated.needAssistance = crypt.decrypt(eventdbUpdated.needAssistance)
 			var id = eventdbUpdated._id.toString();
 			var idencrypt = crypt.encrypt(id);
 			User.findById(eventdbUpdated.createdBy, (err, user) => {
