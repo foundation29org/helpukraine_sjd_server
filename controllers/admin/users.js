@@ -191,6 +191,7 @@ async function getInfoUser(patient) {
 					})
 						
 				}
+				
 				var resp = {userId: userId, userName: userName, email: user.email, lang: user.lang, phone: user.phone, countryPhoneCode: user.countryselectedPhoneCode, signupDate: user.signupDate, lastLogin: user.lastLogin, blockedaccount: user.blockedaccount, iscaregiver: user.iscaregiver, patientId:idencrypt, birthDate: patient.birthDate, lat: patient.lat, lng: patient.lng, status: patient.status, group: patient.group, notes: patient.notes, drugs: patient.drugs, subgroup: user.subgroup, role: patient.role, msgs: msgs, unread: unread, creationDate: patient.creationDate, referralCenter: patient.referralCenter, needAssistance: patient.needAssistance, country: patient.country, salesforceId: patient.salesforceId}
 				resolve(resp);
 			}else{

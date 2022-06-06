@@ -228,11 +228,17 @@ function getPatient (req, res){
 function updatePatient (req, res){
 	let patientId= crypt.decrypt(req.params.patientId);
 	let update = req.body
+	update.lat = crypt.encrypt(update.lat.toString())
+	update.lng = crypt.encrypt(update.lng.toString())
+	update.needAssistance = crypt.encrypt(update.needAssistance)
   Patient.findByIdAndUpdate(patientId, update, {new: true}, async (err,patientUpdated) => {
   //Patient.findByIdAndUpdate(patientId, { gender: req.body.gender, birthDate: req.body.birthDate, patientName: req.body.patientName, surname: req.body.surname, relationship: req.body.relationship, country: req.body.country, previousDiagnosis: req.body.previousDiagnosis, group: req.body.group }, {new: true}, async (err,patientUpdated) => {
 		if (err) return res.status(500).send({message: `Error making the request: ${err}`})
 		var id = patientUpdated._id.toString();
 		var idencrypt= crypt.encrypt(id);
+		patientUpdated.lat = crypt.decrypt(patientUpdated.lat)
+		patientUpdated.lng = crypt.decrypt(patientUpdated.lng)
+		patientUpdated.needAssistance = crypt.decrypt(patientUpdated.needAssistance)
 		var patientInfo = {sub:idencrypt, patientName: patientUpdated.patientName, surname: patientUpdated.surname, birthDate: patientUpdated.birthDate, gender: patientUpdated.gender, country: patientUpdated.country, previousDiagnosis: patientUpdated.previousDiagnosis, group: patientUpdated.group};
 		
 		//notifySalesforce
