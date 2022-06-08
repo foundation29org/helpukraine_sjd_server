@@ -103,7 +103,6 @@ function setCaseData(url, user, patient, type){
        }
     ]
    };
-   console.log(JSON.stringify(data));
 
    if(patient.drugs.length>0){
     for(let i = 0; i < patient.drugs.length; i++){

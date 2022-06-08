@@ -18,8 +18,6 @@ const f29azureserviceCtrl = require('../services/f29azure')
 const supportCtrl = require('../controllers/all/support')
 
 const groupCtrl = require('../controllers/all/group')
-
-const openRaitoCtrl = require('../controllers/all/openraito')
 const admninUsersCtrl = require('../controllers/admin/users')
 
 const requestCliCtrl = require('../controllers/user/request-clin')
@@ -97,7 +95,6 @@ api.post('/support/all/:userId', auth(roles.AdminSuperAdmin), supportCtrl.getAll
 api.post('/callTextAnalytics', f29apiv2serviceCtrl.callTextAnalytics)
 
 //services f29bio
-api.post('/Translation/document/translate', f29bioserviceCtrl.getTranslationDictionary)
 api.post('/Translation/document/translate2', f29bioserviceCtrl.getTranslationDictionary2)
 
 //services f29azure
@@ -111,15 +108,6 @@ api.get('/groups', groupCtrl.getGroups)
 api.get('/group/:groupName', auth(roles.All), groupCtrl.getGroup)
 api.get('/group/notifications/:userId', auth(roles.Admin), groupCtrl.getNotifications)
 api.put('/group/notifications/:userId', auth(roles.Admin), groupCtrl.setNotifications)
-
-
-// openraito
-api.get('/openraito/patient/generalshare/:patientId', auth(roles.UserResearcher), openRaitoCtrl.getGeneralShare)
-api.post('/openraito/patient/generalshare/:patientId', auth(roles.OnlyUser), openRaitoCtrl.setGeneralShare)
-api.get('/openraito/patient/customshare/:patientId', auth(roles.UserResearcher), openRaitoCtrl.getCustomShare)
-api.post('/openraito/patient/customshare/:patientId', auth(roles.OnlyUser), openRaitoCtrl.setCustomShare)
-api.get('/openraito/patient/individualshare/:patientId', auth(roles.OnlyUser), openRaitoCtrl.getIndividualShare)
-api.post('/openraito/patient/individualshare/:patientId', auth(roles.OnlyUser), openRaitoCtrl.setIndividualShare)
 
 
 api.get('/admin/users/:groupName', auth(roles.Readers), admninUsersCtrl.getUsers)

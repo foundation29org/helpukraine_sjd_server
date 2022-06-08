@@ -53,13 +53,10 @@ function saveRequest (req, res){
 				if(user){
 					serviceSalesForce.getToken()
 						.then(response => {
-							console.log(JSON.stringify(response));
 							var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
 							var data  = serviceSalesForce.setCaseData(url, user, eventdbStored, "Profesional-Organizacion");
-							console.log(data)
 							serviceSalesForce.composite(response.access_token, response.instance_url, data)
 							.then(response2 => {
-								console.log(JSON.stringify(response2));
 								if(response2.graphs[0].isSuccessful){
 									var countDrugs = 0;
 									var hasCase = false;
