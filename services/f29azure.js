@@ -12,7 +12,7 @@ function getDetectLanguage(req, res) {
   var jsonText = req.body;
   var category = config.translationCategory;
   var translationKey = config.translationKey;
-  request.post({ url: 'https://api.cognitive.microsofttranslator.com/detect?api-version=3.0', json: true, headers: { 'Ocp-Apim-Subscription-Key': translationKey }, body: jsonText }, (error, response, body) => {
+  request.post({ url: 'https://api.cognitive.microsofttranslator.com/detect?api-version=3.0', json: true, headers: { 'Ocp-Apim-Subscription-Key': translationKey, 'Ocp-Apim-Subscription-Region': 'northeurope' }, body: jsonText }, (error, response, body) => {
     if (error) {
       console.error(error)
       res.status(500).send(error)

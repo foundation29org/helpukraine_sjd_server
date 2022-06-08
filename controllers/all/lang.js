@@ -66,29 +66,6 @@ function getLangs(req, res) {
 
 			});
 		}
-		/*RequestClin.find({}, (err, eventsdb) => {
-			if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-			var listEventsdb = [];
-
-			eventsdb.forEach(function (eventdb) {
-				console.log(eventdb);
-				eventdb.referralCenter = crypt.encrypt(eventdb.referralCenter);
-				RequestClin.findByIdAndUpdate(eventdb._id, eventdb, { new: true }, (err, eventdbUpdated) => {
-				});
-			});
-		});
-
-		Patient.find({},(err, eventsdb) => {
-			if (err) return res.status(500).send({message: `Error making the request: ${err}`})
-			var listEventsdb = [];
-	
-			eventsdb.forEach(function(eventdb) {
-				console.log(eventdb);
-				eventdb.referralCenter = crypt.encrypt(eventdb.referralCenter);
-				Patient.findByIdAndUpdate(eventdb._id, eventdb, { new: true}, (err,eventdbUpdated) => {
-				});
-			});
-		});*/
 
 		res.status(200).send(listLangs)
 	});
