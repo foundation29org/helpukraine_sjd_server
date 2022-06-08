@@ -195,7 +195,6 @@ UserSchema.post('save', function (document) {
 
 UserSchema.post('findOne', function (document) {
 	if(document !== null){
-		console.log(document);
 		document.phone = crypt.decrypt(document.phone)
 		document.lastName = crypt.decrypt(document.lastName)
 		document.userName = crypt.decrypt(document.userName)
