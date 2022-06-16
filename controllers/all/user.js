@@ -12,6 +12,7 @@ const crypt = require('../../services/crypt')
 const bcrypt = require('bcrypt-nodejs')
 const config = require('../../config')
 const serviceSalesForce = require('../../services/salesForce')
+const request = require("request");
 
 function activateUser(req, res) {
 	req.body.email = (req.body.email).toLowerCase();
@@ -88,7 +89,7 @@ function recoverPass(req, res) {
 		if (user) {
 			if (user.confirmed) {
 				//generamos una clave aleatoria y añadimos un campo con la hora de la clave proporcionada, cada que caduque a los 15 minutos
-				let randomstring = Math.random().toString(36).slice(-12)
+				let randomstring = crypt.encrypt(Math.random().toString(36).slice(-12))
 				user.randomCodeRecoverPass = randomstring;
 				user.dateTimeRecoverPass = Date.now();
 
@@ -165,54 +166,73 @@ function recoverPass(req, res) {
 
  */
 function updatePass(req, res) {
-	const user0 = new User({
-		password: req.body.password
-	})
-	req.body.email = (req.body.email).toLowerCase();
-	User.findOne({ 'email': req.body.email }, function (err, user) {
-		if (err) return res.status(500).send({ message: 'Error searching the user' })
-		if (user) {
-			const userToSave = user;
-			userToSave.password = req.body.password
-			//ver si el enlace a caducado, les damos 15 minutos para reestablecer la pass
-			var limittime = new Date(); // just for example, can be any other time
-			var myTimeSpan = 15 * 60 * 1000; // 15 minutes in milliseconds
-			limittime.setTime(limittime.getTime() - myTimeSpan);
+	let secretKey = config.secretCaptcha; //the secret key from your google admin console;
+	let token = req.body.captchaToken
 
-			//var limittime = moment().subtract(15, 'minutes').unix();
+  	const url =  `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}&remoteip=${req.connection.remoteAddress}`
 
-			if (limittime.getTime() < userToSave.dateTimeRecoverPass.getTime()) {
-				if (userToSave.randomCodeRecoverPass == req.body.randomCodeRecoverPass) {
-
-
-					bcrypt.genSalt(10, (err, salt) => {
-						if (err) return res.status(500).send({ message: 'error salt' })
-						bcrypt.hash(userToSave.password, salt, null, (err, hash) => {
-							if (err) return res.status(500).send({ message: 'error hash' })
-
-							userToSave.password = hash
-							User.findByIdAndUpdate(userToSave._id, { password: userToSave.password }, {select: '-createdBy', new: true}, (err,userUpdated) => {
-								if (err) return res.status(500).send({ message: 'Error saving the pass' })
-								if (!userUpdated) return res.status(500).send({ message: 'not found' })
-
-								return res.status(200).send({ message: 'password changed' })
-							})
-						})
-					})
-
-
-
-				} else {
-					return res.status(500).send({ message: 'invalid link' })
-				}
-			} else {
-				return res.status(500).send({ message: 'link expired' })
+	if(token === null || token === undefined){
+		return res.status(202).send({message: `Token is empty or invalid`})
+  	}else{
+		request(url, function(err, response, body){
+			//the body is the data that contains success message
+			body = JSON.parse(body);
+			//check if the validation failed
+			if(!body.success){
+				return res.status(202).send({message: `recaptcha failed`})
+			 }else{
+				const user0 = new User({
+					password: req.body.password
+				})
+				req.body.email = (req.body.email).toLowerCase();
+				User.findOne({ 'email': req.body.email }, function (err, user) {
+					if (err) return res.status(500).send({ message: 'Error searching the user' })
+					if (user) {
+						const userToSave = user;
+						userToSave.password = req.body.password
+						//ver si el enlace a caducado, les damos 15 minutos para reestablecer la pass
+						var limittime = new Date(); // just for example, can be any other time
+						var myTimeSpan = 15 * 60 * 1000; // 15 minutes in milliseconds
+						limittime.setTime(limittime.getTime() - myTimeSpan);
+			
+						//var limittime = moment().subtract(15, 'minutes').unix();
+			
+						if (limittime.getTime() < userToSave.dateTimeRecoverPass.getTime()) {
+							if (userToSave.randomCodeRecoverPass == req.body.randomCodeRecoverPass) {
+			
+			
+								bcrypt.genSalt(10, (err, salt) => {
+									if (err) return res.status(500).send({ message: 'error salt' })
+									bcrypt.hash(userToSave.password, salt, null, (err, hash) => {
+										if (err) return res.status(500).send({ message: 'error hash' })
+			
+										userToSave.password = hash
+										User.findByIdAndUpdate(userToSave._id, { password: userToSave.password }, {select: '-createdBy', new: true}, (err,userUpdated) => {
+											if (err) return res.status(500).send({ message: 'Error saving the pass' })
+											if (!userUpdated) return res.status(500).send({ message: 'not found' })
+			
+											return res.status(200).send({ message: 'password changed' })
+										})
+									})
+								})
+			
+			
+			
+							} else {
+								return res.status(500).send({ message: 'invalid link' })
+							}
+						} else {
+							return res.status(500).send({ message: 'link expired' })
+						}
+					} else {
+						//return res.status(500).send({ message: 'user not exists'})
+						return res.status(500).send({ message: 'invalid link' })
+					}
+				})
 			}
-		} else {
-			//return res.status(500).send({ message: 'user not exists'})
-			return res.status(500).send({ message: 'invalid link' })
-		}
-	})
+		})
+	}
+	
 }
 
 /**
@@ -391,85 +411,108 @@ function newPass(req, res) {
 
 
 function signUp(req, res) {
-	req.body.email = (req.body.email).toLowerCase();
-	let randomstring = Math.random().toString(36).slice(-12);
-	const user = new User({
-		email: req.body.email,
-		role: req.body.role,
-		subrole: req.body.subrole,
-		userName: req.body.userName,
-		lastName: req.body.lastName,
-		password: req.body.password,
-		phone: req.body.phone,
-		countryselectedPhoneCode: req.body.countryselectedPhoneCode,
-		confirmationCode: randomstring,
-		lang: req.body.lang,
-		group: req.body.group,
-		permissions: req.body.permissions,
-		platform: 'Relief Ukraine'
-	})
-	User.findOne({ 'email': req.body.email }, function (err, user2) {
-		if (err) return res.status(500).send({ message: `Error creating the user: ${err}` })
-		if (!user2) {
-			user.save((err, userSaved) => {
-				if (err) return res.status(500).send({ message: `Error creating the user: ${err}` })
+	let secretKey = config.secretCaptcha; //the secret key from your google admin console;
+	let token = req.body.captchaToken
 
-				//Create the patient
-				if (req.body.role == 'User') {
-					var userId = userSaved._id.toString();
-					savePatient(userId, req, userSaved);
-				}
-				if(req.body.role == 'Clinical'){
-					var id = userSaved._id.toString();
-					var idencrypt = crypt.encrypt(id);
-					serviceSalesForce.getToken()
-					.then(response => {
-						var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
-	
-							var type = "Profesional-Organizacion";
-							var data  = serviceSalesForce.setUserData(url, user, type);
-	
-							serviceSalesForce.composite(response.access_token, response.instance_url, data)
-							.then(response2 => {
-								var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
-								User.findByIdAndUpdate(userSaved._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
-									if (err){
-										console.log(`Error updating the user: ${err}`);
-									}
-									if(eventdbStored){
-										console.log('User updated sales ID');
-									}
-								})
-							})
-							.catch(response2 => {
-								console.log(response2)
-							})
-						
-					})
-					.catch(response => {
-						console.log(response)
-					})
-				}
+  	const url =  `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}&remoteip=${req.connection.remoteAddress}`
+
+	if(token === null || token === undefined){
+		return res.status(202).send({message: `Token is empty or invalid`})
+  	}else{
+		request(url, function(err, response, body){
+			//the body is the data that contains success message
+			body = JSON.parse(body);
+			//check if the validation failed
+			if(!body.success){
+				return res.status(202).send({message: `recaptcha failed`})
+			 }else{
+				//if passed response success message to client
+				req.body.email = (req.body.email).toLowerCase();
+				let randomstring = crypt.encrypt(Math.random().toString(36).slice(-12));
+				const user = new User({
+					email: req.body.email,
+					role: req.body.role,
+					subrole: req.body.subrole,
+					userName: req.body.userName,
+					lastName: req.body.lastName,
+					password: req.body.password,
+					phone: req.body.phone,
+					countryselectedPhoneCode: req.body.countryselectedPhoneCode,
+					confirmationCode: randomstring,
+					lang: req.body.lang,
+					group: req.body.group,
+					permissions: req.body.permissions,
+					platform: 'Relief Ukraine'
+				})
+				User.findOne({ 'email': req.body.email }, function (err, user2) {
+					if (err) return res.status(500).send({ message: `Error creating the user: ${err}` })
+					if (!user2) {
+						user.save((err, userSaved) => {
+							if (err) return res.status(500).send({ message: `Error creating the user: ${err}` })
+			
+							//Create the patient
+							if (req.body.role == 'User') {
+								var userId = userSaved._id.toString();
+								savePatient(userId, req, userSaved);
+							}
+							if(req.body.role == 'Clinical'){
+								var id = userSaved._id.toString();
+								var idencrypt = crypt.encrypt(id);
+								serviceSalesForce.getToken()
+								.then(response => {
+									var url = "/services/data/"+config.SALES_FORCE.version + '/sobjects/Case/VH_WebExternalId__c/' + idencrypt;
 				
+										var type = "Profesional-Organizacion";
+										var data  = serviceSalesForce.setUserData(url, user, type);
+				
+										serviceSalesForce.composite(response.access_token, response.instance_url, data)
+										.then(response2 => {
+											var valueId = response2.graphs[0].graphResponse.compositeResponse[0].body.id;
+											User.findByIdAndUpdate(userSaved._id, { salesforceId: valueId }, { select: '-createdBy', new: true }, (err, eventdbStored) => {
+												if (err){
+													console.log(`Error updating the user: ${err}`);
+												}
+												if(eventdbStored){
+													console.log('User updated sales ID');
+												}
+											})
+										})
+										.catch(response2 => {
+											console.log(response2)
+										})
+									
+								})
+								.catch(response => {
+									console.log(response)
+								})
+							}
+							
+			
+			
+			
+			
+							serviceEmail.sendMailVerifyEmail(req.body.email, req.body.userName, randomstring, req.body.lang, req.body.group)
+								.then(response => {
+									res.status(200).send({ message: 'Account created' })
+								})
+								.catch(response => {
+									//create user, but Failed sending email.
+									//res.status(200).send({ token: serviceAuth.createToken(user),  message: 'Fail sending email'})
+									res.status(200).send({ message: 'Fail sending email' })
+								})
+							//return res.status(200).send({ token: serviceAuth.createToken(user)})
+						})
+					} else {
+						return res.status(202).send({ message: 'user exists' })
+					}
+				})
+			}
+		  })
+	}
 
-
-
-
-				serviceEmail.sendMailVerifyEmail(req.body.email, req.body.userName, randomstring, req.body.lang, req.body.group)
-					.then(response => {
-						res.status(200).send({ message: 'Account created' })
-					})
-					.catch(response => {
-						//create user, but Failed sending email.
-						//res.status(200).send({ token: serviceAuth.createToken(user),  message: 'Fail sending email'})
-						res.status(200).send({ message: 'Fail sending email' })
-					})
-				//return res.status(200).send({ token: serviceAuth.createToken(user)})
-			})
-		} else {
-			return res.status(202).send({ message: 'user exists' })
-		}
-	})
+	
+  
+	
 }
 
 function savePatient(userId, req, user) {
@@ -528,7 +571,7 @@ function savePatient(userId, req, user) {
 
 function sendEmail(req, res) {
 	req.body.email = (req.body.email).toLowerCase();
-	let randomstring = Math.random().toString(36).slice(-12);
+	let randomstring = crypt.encrypt(Math.random().toString(36).slice(-12));
 	User.findOne({ 'email': req.body.email }, function (err, user) {
 		if (err) return res.status(500).send({ message: `Error finding the user: ${err}` })
 		if (user) {

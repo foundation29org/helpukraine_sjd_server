@@ -25,5 +25,6 @@ module.exports = {
   keyGenomics: undefined, //Azure Storage account KEY. Use access keys to authenticate your applications when making requests to this Azure storage account.
   nameBlob: undefined, //Name of the blob
   TA_KEY: process.env.TA_KEY, // secret key for text analitycs for health azure
-  TA_ENDPOINT: process.env.TA_ENDPOINT // endpoint text analitycs for health azure
+  TA_ENDPOINT: process.env.TA_ENDPOINT, // endpoint text analitycs for health azure
+  secretCaptcha: process.env.googleCaptcha
 }
