@@ -99,7 +99,6 @@ api.post('/Translation/document/translate2', f29bioserviceCtrl.getTranslationDic
 
 //services f29azure
 api.post('/getDetectLanguage', auth(roles.All), f29azureserviceCtrl.getDetectLanguage)
-api.get('/getAzureBlobSasTokenWithContainer/:containerName', auth(roles.AllLessResearcher), f29azureserviceCtrl.getAzureBlobSasTokenWithContainer)
 
 //groups
 api.get('/groupsnames', groupCtrl.getGroupsNames)

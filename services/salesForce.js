@@ -2,7 +2,6 @@
 const config = require('../config')
 const request = require('request')
 const crypt = require('../services/crypt')
-const { blobAccessToken } = require('../config')
 
 function getToken (){
   var SL_URL = config.SALES_FORCE.url;
@@ -173,13 +172,6 @@ function setUserData(url, user, type){
 
 function setMsgData(url, supportStored, salesforceId){
   var attachments = "";
-  if(supportStored.files.length>0){
-    supportStored.files.forEach(function(file) {
-      
-      var urlpath = blobAccessToken.blobAccountUrl+'filessupport/'+file+blobAccessToken.sasToken;
-      attachments=attachments+urlpath+',';
-    });
-  }
 
   var data  = {
     "graphs":[
