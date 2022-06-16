@@ -1,6 +1,6 @@
 'use strict'
 
-const { TRANSPORTER_OPTIONS, client_server, blobAccessToken } = require('../config')
+const { TRANSPORTER_OPTIONS, client_server} = require('../config')
 const nodemailer = require('nodemailer')
 var hbs = require('nodemailer-express-handlebars')
 
@@ -138,15 +138,6 @@ function sendMailRecoverPass (email, userName, randomstring, lang){
 
 function sendMailSupport (email, lang, role, supportStored, emailTo){
   const decoded = new Promise((resolve, reject) => {
-    var attachments = [];
-    if(supportStored.files.length>0){
-      supportStored.files.forEach(function(file) {
-        
-        var urlpath = blobAccessToken.blobAccountUrl+'filessupport/'+file+blobAccessToken.sasToken;
-        console.log(urlpath);
-        attachments.push({filename: file, path: urlpath});
-      });
-    }
     var maillistbcc = [
       TRANSPORTER_OPTIONS.auth.user,
       "maria.larrabe@foundation29.org"
@@ -167,8 +158,7 @@ function sendMailSupport (email, lang, role, supportStored, emailTo){
         email : email,
         lang : lang,
         info: supportStored
-      },
-      attachments: attachments
+      }
     };
 
     transporter.sendMail(mailOptions, function(error, info){
